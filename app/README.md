@@ -1,16 +1,27 @@
-# membropass
+# 📱 MembroPass — App
 
-A new Flutter project.
+Aplicativo do MembroPass em **Flutter**. Um único código atende os três perfis: a navegação e as
+telas mudam conforme o papel do usuário autenticado.
 
-## Getting Started
+| Perfil | Telas principais |
+|---|---|
+| Membro | Carteirinha digital com QR Code, benefícios do plano |
+| Operador | Leitura do QR Code e resultado do check-in |
+| Administrador da organização | Painel com planos, membros, benefícios, unidades, identidade visual e auditoria |
 
-This project is a starting point for a Flutter application.
+## Executando
 
-A few resources to get you started if this is your first Flutter project:
+Com a API rodando (veja [`../api/README.md`](../api/README.md)):
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+```bash
+flutter pub get
+flutter run
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+> No emulador Android, a API local fica acessível em `http://10.0.2.2:3000`.
+
+## Testes
+
+```bash
+flutter test
+```
