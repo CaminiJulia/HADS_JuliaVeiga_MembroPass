@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:17
+    container_name: membropass-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: membropass
+      POSTGRES_PASSWORD: membropass
+      POSTGRES_DB: membropass
+    ports:
+      - "5432:5432"
+    volumes:
+      - membropass-data:/var/lib/postgresql/data
+
+volumes:
+  membropass-data:

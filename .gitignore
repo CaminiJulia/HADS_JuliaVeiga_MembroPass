@@ -1,0 +1,21 @@
+# Node / API
+node_modules/
+api/dist/
+api/coverage/
+*.log
+
+# Variáveis de ambiente (nunca versionar segredos)
+.env
+.env.*
+!.env.example
+
+# Uploads locais (logotipos white-label)
+api/uploads/
+
+# Editores / SO
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
