@@ -2,6 +2,7 @@
 node_modules/
 api/dist/
 api/coverage/
+*.tsbuildinfo
 *.log
 
 # Variáveis de ambiente (nunca versionar segredos)
@@ -19,3 +20,6 @@ api/uploads/
 *.iml
 .DS_Store
 Thumbs.db
+
+# Cliente gerado pelo Prisma (npm install / prisma generate)
+api/src/generated/

@@ -1,8 +1,8 @@
 {
   "name": "api",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "description": "API REST do MembroPass",
+  "author": "Julia Camini Veiga",
   "private": true,
   "license": "UNLICENSED",
   "type": "module",
@@ -19,7 +19,12 @@
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
-    "test:e2e": "vitest run --config ./vitest.config.e2e.ts"
+    "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
+    "postinstall": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "node scripts/db-seed.mjs",
+    "db:reset": "prisma migrate reset --force && npm run db:seed",
+    "db:sql": "node scripts/exportar-sql.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",
@@ -47,7 +52,7 @@
     "dotenv": "^18.0.6",
     "oxlint": "^1.58.0",
     "prettier": "^3.4.2",
-    "prisma": "^8.0.0-rc.20",
+    "prisma": "^7.10.0",
     "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",
     "typescript": "^6.0.2",

@@ -1,0 +1,309 @@
+// Modelo lógico do banco de dados do MembroPass — DVP v2.6, seção 2.3.
+// Os nomes das tabelas e colunas no PostgreSQL seguem o DVP (snake_case);
+// no código TypeScript os campos usam camelCase.
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enumerações ─────────────────────────────────────────────────────────────
+
+enum StatusOrganizacao {
+  EM_HABILITACAO
+  HABILITADA
+  SUSPENSA
+
+  @@map("status_organizacao")
+}
+
+enum StatusCadastro {
+  ATIVO
+  INATIVO
+
+  @@map("status_cadastro")
+}
+
+enum StatusMembro {
+  ATIVO
+  DESATIVADO
+  CANCELADO
+
+  @@map("status_membro")
+}
+
+// O status "vencido" ou "vencendo em breve" não é armazenado: é calculado a
+// partir de data_vencimento, porque o sistema nunca bloqueia automaticamente (RF05).
+enum StatusCarteirinha {
+  ATIVA
+  BLOQUEADA
+  INVALIDADA
+
+  @@map("status_carteirinha")
+}
+
+enum TipoDesconto {
+  PERCENTUAL
+  VALOR
+
+  @@map("tipo_desconto")
+}
+
+enum TipoUnidadeEvento {
+  UNIDADE
+  EVENTO
+
+  @@map("tipo_unidade_evento")
+}
+
+// Toda tentativa de check-in é registrada, inclusive as rejeitadas, com o motivo (RF10).
+enum ResultadoCheckIn {
+  APROVADO
+  REJEITADO_QR_INVALIDO
+  REJEITADO_CARTEIRINHA_BLOQUEADA
+  REJEITADO_CARTEIRINHA_VENCIDA
+  REJEITADO_PLANO_NAO_ACEITO
+  REJEITADO_FORA_DO_PERIODO
+
+  @@map("resultado_check_in")
+}
+
+enum AcaoAuditoria {
+  LIBERACAO_CICLO
+  BLOQUEIO_MANUAL
+  DESATIVACAO_MEMBRO
+  CANCELAMENTO_MEMBRO
+  EDICAO_PLANO
+  ALTERACAO_IDENTIDADE_VISUAL
+
+  @@map("acao_auditoria")
+}
+
+// ─── Organização e cadastros de acesso ───────────────────────────────────────
+
+model Organizacao {
+  id           String            @id @default(uuid()) @db.Uuid
+  nome         String            @db.VarChar(150)
+  cnpj         String            @unique @db.Char(14)
+  logoUrl      String?           @map("logo_url") @db.VarChar(500)
+  corPrincipal String?           @map("cor_principal") @db.Char(7)
+  status       StatusOrganizacao @default(EM_HABILITACAO)
+
+  administradores Administrador[]
+  operadores      Operador[]
+  membros         Membro[]
+  planos          PlanoAssociacao[]
+  beneficios      Beneficio[]
+  unidadesEventos UnidadeEvento[]
+  auditorias      Auditoria[]
+
+  @@map("organizacao")
+}
+
+model Administrador {
+  id            String         @id @default(uuid()) @db.Uuid
+  organizacaoId String         @map("organizacao_id") @db.Uuid
+  nome          String         @db.VarChar(150)
+  email         String         @unique @db.VarChar(255)
+  senhaHash     String         @map("senha_hash") @db.VarChar(255)
+  telefone      String?        @db.VarChar(20)
+  status        StatusCadastro @default(ATIVO)
+
+  organizacao Organizacao      @relation(fields: [organizacaoId], references: [id])
+  liberacoes  LiberacaoCiclo[]
+  auditorias  Auditoria[]
+
+  @@index([organizacaoId])
+  @@map("administrador")
+}
+
+model Operador {
+  id            String         @id @default(uuid()) @db.Uuid
+  organizacaoId String         @map("organizacao_id") @db.Uuid
+  nome          String         @db.VarChar(150)
+  email         String         @unique @db.VarChar(255)
+  senhaHash     String         @map("senha_hash") @db.VarChar(255)
+  status        StatusCadastro @default(ATIVO)
+
+  organizacao Organizacao @relation(fields: [organizacaoId], references: [id])
+  checkIns    CheckIn[]
+
+  @@index([organizacaoId])
+  @@map("operador")
+}
+
+// MEMBRO guarda o vínculo (adesão e situação); o ciclo vigente fica em CARTEIRINHA.
+model Membro {
+  id            String       @id @default(uuid()) @db.Uuid
+  organizacaoId String       @map("organizacao_id") @db.Uuid
+  nome          String       @db.VarChar(150)
+  email         String       @unique @db.VarChar(255)
+  senhaHash     String       @map("senha_hash") @db.VarChar(255)
+  telefone      String?      @db.VarChar(20)
+  planoId       String       @map("plano_id") @db.Uuid
+  dataAdesao    DateTime     @default(now()) @map("data_adesao") @db.Date
+  status        StatusMembro @default(ATIVO)
+
+  organizacao Organizacao      @relation(fields: [organizacaoId], references: [id])
+  plano       PlanoAssociacao  @relation(fields: [planoId], references: [id])
+  carteirinha Carteirinha?
+  liberacoes  LiberacaoCiclo[]
+
+  @@index([organizacaoId])
+  @@index([planoId])
+  @@map("membro")
+}
+
+// ─── Planos e benefícios ─────────────────────────────────────────────────────
+
+model PlanoAssociacao {
+  id              String         @id @default(uuid()) @db.Uuid
+  organizacaoId   String         @map("organizacao_id") @db.Uuid
+  nome            String         @db.VarChar(100)
+  valorReferencia Decimal        @map("valor_referencia") @db.Decimal(10, 2)
+  duracaoDias     Int            @map("duracao_dias")
+  status          StatusCadastro @default(ATIVO)
+
+  organizacao     Organizacao          @relation(fields: [organizacaoId], references: [id])
+  membros         Membro[]
+  beneficios      PlanoBeneficio[]
+  unidadesEventos UnidadeEventoPlano[]
+
+  @@index([organizacaoId])
+  @@map("plano_associacao")
+}
+
+model Beneficio {
+  id            String       @id @default(uuid()) @db.Uuid
+  organizacaoId String       @map("organizacao_id") @db.Uuid
+  nome          String       @db.VarChar(100)
+  descricao     String?      @db.Text
+  parceiro      String?      @db.VarChar(150)
+  tipoDesconto  TipoDesconto @map("tipo_desconto")
+  valorDesconto Decimal      @map("valor_desconto") @db.Decimal(10, 2)
+  vigInicio     DateTime?    @map("vig_inicio") @db.Date
+  vigFim        DateTime?    @map("vig_fim") @db.Date
+
+  organizacao Organizacao      @relation(fields: [organizacaoId], references: [id])
+  planos      PlanoBeneficio[]
+
+  @@index([organizacaoId])
+  @@map("beneficio")
+}
+
+model PlanoBeneficio {
+  planoId     String @map("plano_id") @db.Uuid
+  beneficioId String @map("beneficio_id") @db.Uuid
+
+  plano     PlanoAssociacao @relation(fields: [planoId], references: [id], onDelete: Cascade)
+  beneficio Beneficio       @relation(fields: [beneficioId], references: [id], onDelete: Cascade)
+
+  @@id([planoId, beneficioId])
+  @@map("plano_beneficio")
+}
+
+// ─── Carteirinha e ciclos ────────────────────────────────────────────────────
+
+model Carteirinha {
+  id             String            @id @default(uuid()) @db.Uuid
+  membroId       String            @unique @map("membro_id") @db.Uuid
+  qrTokenHash    String            @map("qr_token_hash") @db.VarChar(255)
+  qrVersao       Int               @default(1) @map("qr_versao")
+  dataEmissao    DateTime          @default(now()) @map("data_emissao") @db.Date
+  dataVencimento DateTime          @map("data_vencimento") @db.Date
+  status         StatusCarteirinha @default(ATIVA)
+
+  membro   Membro    @relation(fields: [membroId], references: [id])
+  checkIns CheckIn[]
+
+  @@map("carteirinha")
+}
+
+model LiberacaoCiclo {
+  id              String   @id @default(uuid()) @db.Uuid
+  membroId        String   @map("membro_id") @db.Uuid
+  confirmadoPor   String   @map("confirmado_por") @db.Uuid
+  dataReferencia  DateTime @map("data_referencia") @db.Date
+  dataConfirmacao DateTime @default(now()) @map("data_confirmacao") @db.Timestamptz
+  novoVencimento  DateTime @map("novo_vencimento") @db.Date
+
+  membro        Membro        @relation(fields: [membroId], references: [id])
+  administrador Administrador @relation(fields: [confirmadoPor], references: [id])
+
+  @@index([membroId])
+  @@map("liberacao_ciclo")
+}
+
+// ─── Unidades, eventos e check-in ────────────────────────────────────────────
+
+model UnidadeEvento {
+  id            String            @id @default(uuid()) @db.Uuid
+  organizacaoId String            @map("organizacao_id") @db.Uuid
+  nome          String            @db.VarChar(150)
+  tipo          TipoUnidadeEvento
+  localizacao   String?           @db.VarChar(255)
+  dataInicio    DateTime?         @map("data_inicio") @db.Timestamptz
+  dataFim       DateTime?         @map("data_fim") @db.Timestamptz
+
+  organizacao Organizacao          @relation(fields: [organizacaoId], references: [id])
+  planos      UnidadeEventoPlano[]
+  checkIns    CheckIn[]
+
+  @@index([organizacaoId])
+  @@map("unidade_evento")
+}
+
+model UnidadeEventoPlano {
+  unidadeEventoId String @map("unidade_evento_id") @db.Uuid
+  planoId         String @map("plano_id") @db.Uuid
+
+  unidadeEvento UnidadeEvento   @relation(fields: [unidadeEventoId], references: [id], onDelete: Cascade)
+  plano         PlanoAssociacao @relation(fields: [planoId], references: [id], onDelete: Cascade)
+
+  @@id([unidadeEventoId, planoId])
+  @@map("unidade_evento_plano")
+}
+
+// carteirinha_id é opcional porque um QR Code inválido não corresponde a nenhuma carteirinha,
+// mas a tentativa também precisa ser registrada (RF10).
+model CheckIn {
+  id              String           @id @default(uuid()) @db.Uuid
+  carteirinhaId   String?          @map("carteirinha_id") @db.Uuid
+  unidadeEventoId String           @map("unidade_evento_id") @db.Uuid
+  operadorId      String           @map("operador_id") @db.Uuid
+  dataHora        DateTime         @default(now()) @map("data_hora") @db.Timestamptz
+  resultado       ResultadoCheckIn
+
+  carteirinha   Carteirinha?  @relation(fields: [carteirinhaId], references: [id])
+  unidadeEvento UnidadeEvento @relation(fields: [unidadeEventoId], references: [id])
+  operador      Operador      @relation(fields: [operadorId], references: [id])
+
+  @@index([carteirinhaId])
+  @@index([unidadeEventoId, dataHora])
+  @@map("check_in")
+}
+
+// ─── Auditoria (imutável — RNF11) ────────────────────────────────────────────
+
+model Auditoria {
+  id              String        @id @default(uuid()) @db.Uuid
+  organizacaoId   String        @map("organizacao_id") @db.Uuid
+  administradorId String        @map("administrador_id") @db.Uuid
+  acao            AcaoAuditoria
+  entidade        String        @db.VarChar(50)
+  entidadeId      String        @map("entidade_id") @db.Uuid
+  justificativa   String?       @db.Text
+  dataHora        DateTime      @default(now()) @map("data_hora") @db.Timestamptz
+
+  organizacao   Organizacao   @relation(fields: [organizacaoId], references: [id])
+  administrador Administrador @relation(fields: [administradorId], references: [id])
+
+  @@index([organizacaoId, dataHora])
+  @@map("auditoria")
+}
