@@ -115,6 +115,8 @@ docker compose up -d
 cd api
 cp .env.example .env
 npm install
+npx prisma migrate deploy   # cria as tabelas, triggers e procedures
+npm run db:seed             # dados de teste (senha: Senha@123)
 npm run start:dev
 
 # 3. Aplicativo
@@ -141,8 +143,8 @@ Detalhes de cada parte: [`api/README.md`](api/README.md) · [`app/README.md`](ap
 | Semana | Entrega | Conteúdo | Status |
 |:---:|:---:|---|:---:|
 | 1 | 05/10 | MVP e estrutura do repositório | ✅ |
-| 2 | 12/10 | Banco de dados e esqueleto da API | ⏳ |
-| 3 | 19/10 | Login e perfis | ⬜ |
+| 2 | 12/10 | Banco de dados e esqueleto da API | ✅ |
+| 3 | 19/10 | Login e perfis | ⏳ |
 | 4 | 26/10 | Organização, planos e benefícios | ⬜ |
 | 5 | 02/11 | Membros e carteirinha digital | ⬜ |
 | 6 | 09/11 | Liberação de ciclo, bloqueio e auditoria | ⬜ |
