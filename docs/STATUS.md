@@ -1,6 +1,6 @@
 # Status Semanal — MembroPass
 
-## Semana 1 (05/10 – 12/10)
+## Semana 1 (entrega 05/10)
 
 **Concluído**
 - Definição do MVP (`docs/MVP.md`)
