@@ -27,6 +27,7 @@ A API sobe em `http://localhost:3000/api`. Para conferir: `GET /api/saude`.
 
 ```
 src/
+├── auth/         # Login, perfis e guards de acesso por papel e organização
 ├── domain/       # Regras de domínio puras, cobertas por testes unitários
 ├── prisma/       # Conexão com o banco (PrismaService)
 ├── saude/        # Endpoint de verificação da API
@@ -36,6 +37,24 @@ prisma/
 └── migrations/   # Criação das tabelas e regras de negócio em SQL
 test/             # Testes funcionais dos endpoints
 ```
+
+## Autenticação
+
+| Rota | Acesso | Descrição |
+|---|---|---|
+| `POST /api/auth/login` | Público | Login por e-mail e senha; devolve o token e o perfil |
+| `GET /api/auth/eu` | Os três papéis | Perfil de quem está logado |
+
+As demais rotas exigem o cabeçalho `Authorization: Bearer <token>` e declaram os papéis autorizados
+com `@Papeis()`. Rota sem esse decorator é negada (veja `src/auth/guards/`). O `organizacaoId` de
+quem está logado vem em `@UsuarioAtual()` e deve filtrar toda consulta (multi-tenant).
+
+Contas dos dados de teste (senha `Senha@123`): `admin@clubeatletico.com.br` (administrador),
+`portaria@clubeatletico.com.br` (operador), `ana.souza@email.com` (membro) e
+`admin@acnorte.com.br` (administrador de organização em habilitação).
+
+Os testes funcionais (`npm run test:e2e`) recriam o banco `membropass_test` no mesmo servidor do
+`.env`, com as migrations e os dados de teste. O banco do `.env` não é alterado.
 
 ## Scripts
 

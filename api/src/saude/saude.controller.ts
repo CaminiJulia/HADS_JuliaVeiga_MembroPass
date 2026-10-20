@@ -1,4 +1,5 @@
 import { Controller, Get, ServiceUnavailableException } from '@nestjs/common';
+import { Publico } from '../auth/decorators.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 // Verifica se a API está no ar e conectada ao banco de dados.
@@ -6,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 export class SaudeController {
   constructor(private readonly prisma: PrismaService) {}
 
+  @Publico()
   @Get()
   async verificar() {
     try {
