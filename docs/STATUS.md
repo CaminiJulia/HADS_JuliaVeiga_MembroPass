@@ -1,5 +1,40 @@
 # Status Semanal — MembroPass
 
+## Semana 3 (entrega 19/10)
+
+**Concluído**
+- API: login por e-mail e senha nos três cadastros, localizando o e-mail entre administrador,
+  operador e membro (RF01, HU02)
+  - Senha conferida pelo próprio banco com bcrypt (pgcrypto), o mesmo formato dos dados de teste
+  - Mesma mensagem para e-mail inexistente e senha errada, com tempo de resposta equivalente
+  - Bloqueio temporário de 15 minutos após 5 tentativas inválidas seguidas
+  - Cadastro inativo e organização não habilitada são recusados com mensagem clara
+- API: controle de acesso por papel e por organização (RF02, RNF01, RNF09)
+  - Token JWT; a conta é recarregada a cada requisição, então a desativação vale na hora
+  - Nega por padrão: toda rota precisa declarar os papéis autorizados
+  - Administrador de organização em habilitação só consulta o próprio perfil (RF03)
+  - `GET /api/auth/eu` para o app restaurar a sessão
+- App: tela de login, sessão salva com armazenamento seguro e navegação por papel (área do
+  administrador, do operador e do membro), com o tema na cor da organização
+- Testes funcionais rodando em banco próprio (`membropass_test`), recriado a cada execução com as
+  migrations e os dados de teste
+
+**Verificação**
+- API: 20 testes unitários (7 novos, do bloqueio de login) e 20 testes funcionais, incluindo
+  tentativas de acessar rotas de outro papel e o uso de token de conta desativada
+- App: 17 testes (cliente da API, modelos e navegação por papel); `flutter analyze` sem avisos
+
+**Próxima semana (26/10)**
+- Organização, planos e benefícios (RF03, RF04, RF08)
+
+**Pendências no DVP**
+- RF01: registrar que o bloqueio por tentativas fica em memória da API (5 tentativas, 15 minutos)
+- Ferramentas: incluir `flutter_secure_storage` e `http`; Riverpod escolhido (no lugar de "Provider
+  ou Riverpod")
+- Recuperação de senha e confirmação de e-mail seguem fora do MVP (`docs/MVP.md`)
+
+---
+
 ## Semana 2 (entrega 12/10)
 
 **Concluído**

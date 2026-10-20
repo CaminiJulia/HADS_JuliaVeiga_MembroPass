@@ -144,8 +144,8 @@ Detalhes de cada parte: [`api/README.md`](api/README.md) · [`app/README.md`](ap
 |:---:|:---:|---|:---:|
 | 1 | 05/10 | MVP e estrutura do repositório | ✅ |
 | 2 | 12/10 | Banco de dados e esqueleto da API | ✅ |
-| 3 | 19/10 | Login e perfis | ⏳ |
-| 4 | 26/10 | Organização, planos e benefícios | ⬜ |
+| 3 | 19/10 | Login e perfis | ✅ |
+| 4 | 26/10 | Organização, planos e benefícios | ⏳ |
 | 5 | 02/11 | Membros e carteirinha digital | ⬜ |
 | 6 | 09/11 | Liberação de ciclo, bloqueio e auditoria | ⬜ |
 | 7 | 16/11 | Unidades, eventos e check-in | ⬜ |
