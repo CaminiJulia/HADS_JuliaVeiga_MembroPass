@@ -1,34 +1,34 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:membropass/core/validadores.dart';
+import 'package:membropass/core/validacao/validadores.dart';
 
 void main() {
   group('Validadores.email', () {
-    test('aceita e-mail válido, ignorando espaços nas pontas', () {
-      expect(Validadores.email('membro@clube.com.br'), isNull);
-      expect(Validadores.email('  membro@clube.com  '), isNull);
-    });
-
-    test('pede o e-mail quando está vazio', () {
+    test('rejeita vazio', () {
       expect(Validadores.email(''), 'Informe seu e-mail.');
       expect(Validadores.email('   '), 'Informe seu e-mail.');
       expect(Validadores.email(null), 'Informe seu e-mail.');
     });
 
-    test('recusa formatos inválidos', () {
-      for (final valor in ['membro', 'membro@', '@clube.com', 'membro@clube', 'mem bro@clube.com']) {
-        expect(Validadores.email(valor), 'E-mail inválido.', reason: valor);
+    test('rejeita formato inválido', () {
+      for (final invalido in ['ana', 'ana@', 'ana@org', '@org.com', 'ana @org.com']) {
+        expect(Validadores.email(invalido), 'Informe um e-mail válido.', reason: invalido);
       }
+    });
+
+    test('aceita e-mail válido, ignorando espaços nas pontas', () {
+      expect(Validadores.email('ana@org.com.br'), isNull);
+      expect(Validadores.email('  ana@org.com  '), isNull);
     });
   });
 
-  group('Validadores.obrigatorio', () {
-    test('usa o nome do campo na mensagem', () {
-      expect(Validadores.obrigatorio('', campo: 'sua senha'), 'Informe sua senha.');
-      expect(Validadores.obrigatorio(null, campo: 'sua senha'), 'Informe sua senha.');
+  group('Validadores.senha', () {
+    test('rejeita vazia', () {
+      expect(Validadores.senha(''), 'Informe sua senha.');
+      expect(Validadores.senha(null), 'Informe sua senha.');
     });
 
-    test('não apara espaços, porque espaço pode fazer parte da senha', () {
-      expect(Validadores.obrigatorio(' '), isNull);
+    test('aceita qualquer senha preenchida', () {
+      expect(Validadores.senha('x'), isNull);
     });
   });
 }
