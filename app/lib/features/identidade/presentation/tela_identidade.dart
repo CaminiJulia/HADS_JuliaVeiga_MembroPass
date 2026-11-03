@@ -40,7 +40,7 @@ class _TelaIdentidadeState extends State<TelaIdentidade> {
   String? _erro;
   bool _salvando = false;
 
-  Color _cor = Cores.primaria;
+  Color _cor = Cores.marca;
   Uint8List? _logo;
   String? _logoTipo;
   bool _logoAlterado = false;
@@ -66,7 +66,7 @@ class _TelaIdentidadeState extends State<TelaIdentidade> {
       if (!mounted) return;
       setState(() {
         _organizacao = org;
-        _cor = Contraste.lerHex(org.corPrincipal ?? '') ?? Cores.primaria;
+        _cor = Contraste.lerHex(org.corPrincipal ?? '') ?? Cores.marca;
         _hex.text = Contraste.paraHex(_cor);
         _logo = org.logo;
         _logoTipo = org.logoTipo;
@@ -243,7 +243,8 @@ class _AmostraCor extends StatelessWidget {
           decoration: BoxDecoration(
             color: cor,
             shape: BoxShape.circle,
-            border: Border.all(color: selecionada ? Cores.tinta : Colors.transparent, width: 3),
+            // Borda sempre visível: cores escuras não somem no fundo escuro.
+            border: Border.all(color: selecionada ? Cores.tinta : Cores.borda, width: selecionada ? 3 : 1),
           ),
           child: selecionada ? const Icon(Icons.check, color: Colors.white, size: 20) : null,
         ),

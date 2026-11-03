@@ -280,7 +280,7 @@ class _CartaoCarteirinha extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [Cores.primaria, Color(0xFF1C1F5C)]),
+        gradient: const LinearGradient(colors: [Cores.marca, Cores.marcaEscura]),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(

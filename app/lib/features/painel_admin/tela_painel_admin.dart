@@ -121,7 +121,7 @@ class _Cabecalho extends StatelessWidget {
       pinned: true,
       expandedHeight: 168,
       automaticallyImplyLeading: false,
-      backgroundColor: const Color(0xFF1F2290),
+      backgroundColor: Cores.marcaEscura,
       foregroundColor: Colors.white,
       systemOverlayStyle: SystemUiOverlayStyle.light,
       actions: [
@@ -142,7 +142,7 @@ class _Cabecalho extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Cores.primaria, Color(0xFF1C1F5C)],
+              colors: [Cores.marca, Cores.marcaEscura],
             ),
           ),
           child: SafeArea(

@@ -79,7 +79,7 @@ class _Ilustracao extends StatelessWidget {
               height: lado,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                boxShadow: [BoxShadow(color: Cores.primaria.withValues(alpha: 0.7), blurRadius: lado * 0.6)],
+                boxShadow: [BoxShadow(color: Cores.marca.withValues(alpha: 0.7), blurRadius: lado * 0.6)],
               ),
             ),
             Transform.rotate(

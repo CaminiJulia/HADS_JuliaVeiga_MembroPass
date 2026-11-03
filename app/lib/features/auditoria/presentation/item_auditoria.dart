@@ -29,7 +29,7 @@ class ItemAuditoria extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Cores.lilas.withValues(alpha: 0.3),
+              color: Cores.lilas.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(r.acao.icone, size: 20, color: Cores.primaria),

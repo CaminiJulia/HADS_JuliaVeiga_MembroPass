@@ -1,21 +1,33 @@
 import 'package:flutter/material.dart';
 
-/// Paleta da marca MembroPass (modelo padrão neutro da plataforma, RF17).
+/// Paleta do MembroPass no tema escuro (modelo padrão da plataforma, RF17).
+/// Os nomes indicam o papel da cor, não o tom: [tinta] é o texto principal
+/// (claro) e [fundo] é o fundo das telas (escuro).
 abstract final class Cores {
-  static const primaria = Color(0xFF2B2FB8);
-  static const tinta = Color(0xFF14163A);
+  /// Azul da marca: fundo de cabeçalhos e carteirinhas, sempre com texto branco.
+  static const marca = Color(0xFF2B2FB8);
+  static const marcaEscura = Color(0xFF1C1F5C);
+
+  /// Destaque das áreas escuras: botões, links, ícones e seleção.
+  static const primaria = Color(0xFFA7A9F5);
+
+  /// Texto e ícones em cima de [primaria].
+  static const noPrimaria = Color(0xFF14163A);
   static const lilas = Color(0xFFA7A9F5);
 
-  static const fundo = Color(0xFFF5F6FB);
-  static const superficie = Colors.white;
-  static const borda = Color(0xFFDADCEB);
-  static const textoSecundario = Color(0xFF5B5E7A);
+  static const fundo = Color(0xFF0E1030);
+  static const superficie = Color(0xFF171A42);
+  static const superficieElevada = Color(0xFF20244F);
+  static const borda = Color(0xFF2E3266);
 
-  static const erro = Color(0xFFC62828);
-  static const erroFundo = Color(0xFFFDECEC);
+  static const tinta = Color(0xFFECEDFF);
+  static const textoSecundario = Color(0xFFA4A7CC);
 
-  static const sucesso = Color(0xFF1B7F4B);
-  static const sucessoFundo = Color(0xFFE3F5EA);
-  static const alerta = Color(0xFF9A5B00);
-  static const alertaFundo = Color(0xFFFFF1D6);
+  static const erro = Color(0xFFFF8A80);
+  static const erroFundo = Color(0xFF3A1A24);
+
+  static const sucesso = Color(0xFF6EDC9F);
+  static const sucessoFundo = Color(0xFF14392A);
+  static const alerta = Color(0xFFFFC266);
+  static const alertaFundo = Color(0xFF3B2E12);
 }

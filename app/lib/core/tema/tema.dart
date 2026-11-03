@@ -3,19 +3,22 @@ import 'package:flutter/services.dart';
 
 import 'cores.dart';
 
-/// Tema das áreas internas (claras). As telas de entrada usam o tema escuro
-/// de `visual_entrada.dart`.
+/// Tema escuro das áreas internas. As telas de entrada (`visual_entrada.dart`)
+/// usam a mesma paleta, com fundo em degradê.
 ThemeData criarTema() {
-  final esquema = ColorScheme.fromSeed(seedColor: Cores.primaria).copyWith(
+  final esquema = ColorScheme.fromSeed(seedColor: Cores.marca, brightness: Brightness.dark).copyWith(
     primary: Cores.primaria,
-    onPrimary: Colors.white,
+    onPrimary: Cores.noPrimaria,
     secondary: Cores.lilas,
+    onSecondary: Cores.noPrimaria,
     surface: Cores.superficie,
+    surfaceContainerHigh: Cores.superficieElevada,
     onSurface: Cores.tinta,
     onSurfaceVariant: Cores.textoSecundario,
     outline: Cores.borda,
     outlineVariant: Cores.borda,
     error: Cores.erro,
+    onError: Cores.noPrimaria,
   );
 
   final raio12 = BorderRadius.circular(12);
@@ -24,7 +27,7 @@ ThemeData criarTema() {
     borderSide: const BorderSide(color: Cores.borda),
   );
 
-  final base = ThemeData(useMaterial3: true, colorScheme: esquema);
+  final base = ThemeData(useMaterial3: true, brightness: Brightness.dark, colorScheme: esquema);
   final texto = base.textTheme
       .apply(bodyColor: Cores.tinta, displayColor: Cores.tinta)
       .copyWith(
@@ -46,11 +49,11 @@ ThemeData criarTema() {
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 1,
-      shadowColor: Cores.tinta.withValues(alpha: 0.12),
+      shadowColor: Colors.black.withValues(alpha: 0.5),
       centerTitle: false,
       titleSpacing: 4,
       titleTextStyle: texto.titleLarge?.copyWith(fontSize: 20),
-      systemOverlayStyle: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
+      systemOverlayStyle: SystemUiOverlayStyle.light.copyWith(statusBarColor: Colors.transparent),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
@@ -93,7 +96,7 @@ ThemeData criarTema() {
     ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       backgroundColor: Cores.primaria,
-      foregroundColor: Colors.white,
+      foregroundColor: Cores.noPrimaria,
       elevation: 2,
       highlightElevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -101,7 +104,7 @@ ThemeData criarTema() {
     ),
     chipTheme: ChipThemeData(
       backgroundColor: Cores.superficie,
-      selectedColor: Cores.primaria.withValues(alpha: 0.12),
+      selectedColor: Cores.primaria.withValues(alpha: 0.2),
       checkmarkColor: Cores.primaria,
       side: const BorderSide(color: Cores.borda),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -112,7 +115,7 @@ ThemeData criarTema() {
     segmentedButtonTheme: SegmentedButtonThemeData(
       style: SegmentedButton.styleFrom(
         backgroundColor: Cores.superficie,
-        selectedBackgroundColor: Cores.primaria.withValues(alpha: 0.12),
+        selectedBackgroundColor: Cores.primaria.withValues(alpha: 0.2),
         selectedForegroundColor: Cores.primaria,
         side: const BorderSide(color: Cores.borda),
         shape: RoundedRectangleBorder(borderRadius: raio12),
@@ -121,15 +124,15 @@ ThemeData criarTema() {
       ),
     ),
     dialogTheme: DialogThemeData(
-      backgroundColor: Cores.superficie,
+      backgroundColor: Cores.superficieElevada,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      titleTextStyle: texto.titleLarge,
+      titleTextStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Cores.tinta, height: 1.3),
       contentTextStyle: texto.bodyMedium?.copyWith(color: Cores.textoSecundario, height: 1.4),
       actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
     ),
     popupMenuTheme: PopupMenuThemeData(
-      color: Cores.superficie,
+      color: Cores.superficieElevada,
       surfaceTintColor: Colors.transparent,
       elevation: 6,
       shape: RoundedRectangleBorder(borderRadius: raio12),
@@ -137,14 +140,14 @@ ThemeData criarTema() {
     ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
-      backgroundColor: Cores.tinta,
-      contentTextStyle: const TextStyle(color: Colors.white, fontSize: 14, height: 1.3),
+      backgroundColor: Cores.superficieElevada,
+      contentTextStyle: const TextStyle(color: Cores.tinta, fontSize: 14, height: 1.3),
       actionTextColor: Cores.lilas,
-      shape: RoundedRectangleBorder(borderRadius: raio12),
+      shape: RoundedRectangleBorder(borderRadius: raio12, side: const BorderSide(color: Cores.borda)),
       insetPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
     ),
     datePickerTheme: DatePickerThemeData(
-      backgroundColor: Cores.superficie,
+      backgroundColor: Cores.superficieElevada,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
     ),

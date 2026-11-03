@@ -33,7 +33,7 @@ class AvatarMembro extends StatelessWidget {
   Widget build(BuildContext context) {
     return CircleAvatar(
       radius: raio,
-      backgroundColor: Cores.lilas.withValues(alpha: 0.35),
+      backgroundColor: Cores.lilas.withValues(alpha: 0.16),
       foregroundColor: Cores.primaria,
       child: Text(
         membro.iniciais,

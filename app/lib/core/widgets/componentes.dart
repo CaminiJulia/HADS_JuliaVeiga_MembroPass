@@ -94,7 +94,7 @@ class CarregandoBotao extends StatelessWidget {
   Widget build(BuildContext context) {
     return const SizedBox.square(
       dimension: 22,
-      child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+      child: CircularProgressIndicator(strokeWidth: 2.5, color: Cores.noPrimaria),
     );
   }
 }

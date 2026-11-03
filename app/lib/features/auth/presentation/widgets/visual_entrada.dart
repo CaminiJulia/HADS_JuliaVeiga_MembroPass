@@ -7,10 +7,10 @@ import '../../../../core/tema/cores.dart';
 
 /// Visual escuro compartilhado pelas telas de entrada (boas-vindas, login e recuperar senha).
 ThemeData criarTemaEntrada() {
-  final esquema = ColorScheme.fromSeed(seedColor: Cores.primaria, brightness: Brightness.dark).copyWith(
+  final esquema = ColorScheme.fromSeed(seedColor: Cores.marca, brightness: Brightness.dark).copyWith(
     primary: Cores.lilas,
-    onPrimary: Cores.tinta,
-    surface: Cores.tinta,
+    onPrimary: Cores.noPrimaria,
+    surface: Cores.fundo,
     onSurface: Colors.white,
   );
 
@@ -20,7 +20,7 @@ ThemeData criarTemaEntrada() {
   return ThemeData(
     useMaterial3: true,
     colorScheme: esquema,
-    scaffoldBackgroundColor: Cores.tinta,
+    scaffoldBackgroundColor: Cores.fundo,
     textSelectionTheme: const TextSelectionThemeData(cursorColor: Cores.lilas),
     inputDecorationTheme: InputDecorationTheme(
       labelStyle: const TextStyle(color: Colors.white70),
@@ -36,7 +36,7 @@ ThemeData criarTemaEntrada() {
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: Cores.lilas,
-        foregroundColor: Cores.tinta,
+        foregroundColor: Cores.noPrimaria,
         disabledBackgroundColor: Cores.lilas.withValues(alpha: 0.5),
         minimumSize: const Size.fromHeight(54),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -76,7 +76,7 @@ class FundoEntrada extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0xFF1C1F5C), Cores.tinta],
+                colors: [Cores.marcaEscura, Cores.fundo],
               ),
             ),
             child: Stack(
