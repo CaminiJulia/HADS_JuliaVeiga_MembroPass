@@ -1,10 +1,6 @@
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { DatabaseError } from 'pg';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { BancoService } from '../banco/banco.service';
+import { comUnico } from '../banco/erros';
 import { SalvarPlanoDto } from './dto/plano.dto';
 
 export interface Plano {
@@ -24,6 +20,7 @@ interface LinhaPlano {
 }
 
 const COLUNAS = 'id, nome, valor_referencia, duracao_dias, status';
+const NOME_REPETIDO = 'Já existe um plano com esse nome.';
 
 // RF04. Toda consulta filtra pela organização do token (multi-tenant):
 // um administrador nunca enxerga nem altera planos de outra organização.
@@ -42,7 +39,7 @@ export class PlanosService {
   }
 
   async criar(organizacaoId: string, dados: SalvarPlanoDto): Promise<Plano> {
-    const [linha] = await this.comNomeUnico(() =>
+    const [linha] = await comUnico(NOME_REPETIDO, () =>
       this.banco.consultar<LinhaPlano>(
         `INSERT INTO plano_associacao (organizacao_id, nome, valor_referencia, duracao_dias)
          VALUES ($1, $2, $3, $4)
@@ -58,7 +55,7 @@ export class PlanosService {
     id: string,
     dados: SalvarPlanoDto,
   ): Promise<Plano> {
-    const [linha] = await this.comNomeUnico(() =>
+    const [linha] = await comUnico(NOME_REPETIDO, () =>
       this.banco.consultar<LinhaPlano>(
         `UPDATE plano_associacao
          SET nome = $3, valor_referencia = $4, duracao_dias = $5
@@ -91,17 +88,6 @@ export class PlanosService {
     );
     if (!linha) throw new NotFoundException('Plano não encontrado.');
     return paraPlano(linha);
-  }
-
-  private async comNomeUnico<T>(operacao: () => Promise<T>): Promise<T> {
-    try {
-      return await operacao();
-    } catch (erro) {
-      if (erro instanceof DatabaseError && erro.code === '23505') {
-        throw new ConflictException('Já existe um plano com esse nome.');
-      }
-      throw erro;
-    }
   }
 }
 

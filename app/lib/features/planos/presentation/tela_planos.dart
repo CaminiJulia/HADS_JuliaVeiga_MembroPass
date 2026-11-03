@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../core/api/cliente_api.dart';
 import '../../../core/formatacao/moeda.dart';
 import '../../../core/tema/cores.dart';
+import '../../../core/widgets/componentes.dart';
 import '../domain/plano.dart';
 import '../domain/planos_repositorio.dart';
 import 'tela_formulario_plano.dart';
@@ -34,7 +34,7 @@ class _TelaPlanosState extends State<TelaPlanos> {
       final planos = await _repositorio.listar();
       if (mounted) setState(() => _planos = planos);
     } catch (e) {
-      if (mounted) setState(() => _erro = _mensagem(e));
+      if (mounted) setState(() => _erro = mensagemDeErro(e));
     }
   }
 
@@ -43,49 +43,30 @@ class _TelaPlanosState extends State<TelaPlanos> {
       MaterialPageRoute(builder: (_) => TelaFormularioPlano(plano: plano)),
     );
     if (salvo == null || !mounted) return;
-    _avisar(plano == null ? 'Plano "${salvo.nome}" criado.' : 'Plano "${salvo.nome}" atualizado.');
+    avisar(context, plano == null ? 'Plano "${salvo.nome}" criado.' : 'Plano "${salvo.nome}" atualizado.');
     await _carregar();
   }
 
   Future<void> _alterarAtivo(Plano plano) async {
-    if (plano.ativo && !await _confirmarDesativacao(plano)) return;
+    if (plano.ativo &&
+        !await confirmar(
+          context,
+          titulo: 'Desativar "${plano.nome}"?',
+          mensagem: 'Novos membros não poderão ser vinculados a este plano. '
+              'Os membros que já estão nele continuam normalmente.',
+          acao: 'Desativar',
+        )) {
+      return;
+    }
     try {
       await _repositorio.alterarAtivo(plano.id, ativo: !plano.ativo);
       if (!mounted) return;
-      _avisar(plano.ativo ? 'Plano "${plano.nome}" desativado.' : 'Plano "${plano.nome}" reativado.');
+      avisar(context, plano.ativo ? 'Plano "${plano.nome}" desativado.' : 'Plano "${plano.nome}" reativado.');
       await _carregar();
     } catch (e) {
-      if (mounted) _avisar(_mensagem(e));
+      if (mounted) avisar(context, mensagemDeErro(e));
     }
   }
-
-  Future<bool> _confirmarDesativacao(Plano plano) async {
-    final confirmou = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Desativar "${plano.nome}"?'),
-        content: const Text(
-          'Novos membros não poderão ser vinculados a este plano. '
-          'Os membros que já estão nele continuam normalmente.',
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Desativar')),
-        ],
-      ),
-    );
-    return confirmou ?? false;
-  }
-
-  void _avisar(String mensagem) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(mensagem)));
-  }
-
-  static String _mensagem(Object erro) => erro is ErroApi
-      ? erro.mensagem
-      : 'Não foi possível falar com o servidor. Verifique sua conexão.';
 
   @override
   Widget build(BuildContext context) {
@@ -103,11 +84,11 @@ class _TelaPlanosState extends State<TelaPlanos> {
   }
 
   Widget _corpo() {
-    if (_erro != null) return _Aviso(icone: Icons.cloud_off, texto: _erro!, aoTentarDeNovo: _carregar);
+    if (_erro != null) return AvisoTela(icone: Icons.cloud_off, texto: _erro!, aoTentarDeNovo: _carregar);
     final planos = _planos;
     if (planos == null) return const Center(child: CircularProgressIndicator());
     if (planos.isEmpty) {
-      return const _Aviso(
+      return const AvisoTela(
         icone: Icons.workspace_premium_outlined,
         texto: 'Nenhum plano ainda.\nCrie o primeiro para poder cadastrar membros.',
       );
@@ -140,112 +121,56 @@ class _CartaoPlano extends StatelessWidget {
   Widget build(BuildContext context) {
     final texto = Theme.of(context).textTheme;
 
-    return Material(
-      color: Cores.superficie,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Cores.borda),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: aoEditar,
-        child: Opacity(
-          opacity: plano.ativo ? 1 : 0.6,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 4, 14),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+    return CartaoItem(
+      aoTocar: aoEditar,
+      esmaecido: !plano.ativo,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 4, 14),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              plano.nome,
-                              overflow: TextOverflow.ellipsis,
-                              style: texto.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: Cores.tinta),
-                            ),
-                          ),
-                          if (!plano.ativo) ...[
-                            const SizedBox(width: 8),
-                            const _SeloInativo(),
-                          ],
-                        ],
+                      Flexible(
+                        child: Text(
+                          plano.nome,
+                          overflow: TextOverflow.ellipsis,
+                          style: texto.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: Cores.tinta),
+                        ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${Moeda.formatar(plano.valorReferencia)} · ${_duracao(plano.duracaoDias)}',
-                        style: texto.bodyMedium?.copyWith(color: Cores.textoSecundario),
-                      ),
+                      if (!plano.ativo) ...[
+                        const SizedBox(width: 8),
+                        const Selo('Inativo'),
+                      ],
                     ],
                   ),
-                ),
-                PopupMenuButton<VoidCallback>(
-                  tooltip: 'Opções',
-                  onSelected: (acao) => acao(),
-                  itemBuilder: (_) => [
-                    PopupMenuItem(value: aoEditar, child: const Text('Editar')),
-                    PopupMenuItem(
-                      value: aoAlterarAtivo,
-                      child: Text(plano.ativo ? 'Desativar' : 'Reativar'),
-                    ),
-                  ],
+                  const SizedBox(height: 4),
+                  Text(
+                    '${Moeda.formatar(plano.valorReferencia)} · ${_duracao(plano.duracaoDias)}',
+                    style: texto.bodyMedium?.copyWith(color: Cores.textoSecundario),
+                  ),
+                ],
+              ),
+            ),
+            PopupMenuButton<VoidCallback>(
+              tooltip: 'Opções',
+              onSelected: (acao) => acao(),
+              itemBuilder: (_) => [
+                PopupMenuItem(value: aoEditar, child: const Text('Editar')),
+                PopupMenuItem(
+                  value: aoAlterarAtivo,
+                  child: Text(plano.ativo ? 'Desativar' : 'Reativar'),
                 ),
               ],
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 
   static String _duracao(int dias) => dias == 1 ? 'ciclo de 1 dia' : 'ciclo de $dias dias';
-}
-
-class _SeloInativo extends StatelessWidget {
-  const _SeloInativo();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(color: Cores.borda, borderRadius: BorderRadius.circular(20)),
-      child: Text('Inativo', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Cores.tinta)),
-    );
-  }
-}
-
-class _Aviso extends StatelessWidget {
-  const _Aviso({required this.icone, required this.texto, this.aoTentarDeNovo});
-
-  final IconData icone;
-  final String texto;
-  final VoidCallback? aoTentarDeNovo;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icone, size: 56, color: Cores.lilas),
-            const SizedBox(height: 16),
-            Text(
-              texto,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Cores.textoSecundario),
-            ),
-            if (aoTentarDeNovo != null) ...[
-              const SizedBox(height: 16),
-              TextButton(onPressed: aoTentarDeNovo, child: const Text('Tentar de novo')),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
 }

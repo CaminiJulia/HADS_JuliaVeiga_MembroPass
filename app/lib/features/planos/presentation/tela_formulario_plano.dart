@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../../../core/api/cliente_api.dart';
 import '../../../core/formatacao/moeda.dart';
 import '../../../core/tema/cores.dart';
+import '../../../core/widgets/componentes.dart';
 import '../../auth/presentation/widgets/aviso_erro.dart';
 import '../domain/plano.dart';
 import '../domain/planos_repositorio.dart';
@@ -62,7 +62,7 @@ class _TelaFormularioPlanoState extends State<TelaFormularioPlano> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _erro = e is ErroApi ? e.mensagem : 'Não foi possível salvar. Verifique sua conexão.';
+        _erro = mensagemDeErro(e);
         _salvando = false;
       });
     }
@@ -150,10 +150,7 @@ class _TelaFormularioPlanoState extends State<TelaFormularioPlano> {
                       key: const Key('botao-salvar-plano'),
                       onPressed: _salvando ? null : _salvar,
                       child: _salvando
-                          ? const SizedBox.square(
-                              dimension: 22,
-                              child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
-                            )
+                          ? const CarregandoBotao()
                           : Text(_editando ? 'Salvar alterações' : 'Criar plano'),
                     ),
                   ],

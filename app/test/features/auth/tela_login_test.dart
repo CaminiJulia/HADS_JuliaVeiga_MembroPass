@@ -2,15 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:membropass/app.dart';
 import 'package:membropass/features/auth/data/auth_repositorio_mock.dart';
-import 'package:membropass/features/planos/data/planos_repositorio_mock.dart';
+import 'package:membropass/repositorios.dart';
 
 void main() {
   Future<void> abrirApp(WidgetTester tester) async {
     await tester.pumpWidget(
-      MembroPassApp(
-        authRepositorio: AuthRepositorioMock(latencia: Duration.zero),
-        planosRepositorio: PlanosRepositorioMock(),
-      ),
+      MembroPassApp(repositorios: Repositorios.simulados()),
     );
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('botao-entrar-com-email')));

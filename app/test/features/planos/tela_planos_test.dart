@@ -1,29 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:membropass/app.dart';
-import 'package:membropass/features/auth/data/auth_repositorio_mock.dart';
-import 'package:membropass/features/planos/data/planos_repositorio_mock.dart';
+
+import '../../ajuda.dart';
 
 void main() {
-  /// Entra como administrador e abre a seção Planos pelo painel.
-  Future<void> abrirPlanos(WidgetTester tester) async {
-    await tester.pumpWidget(MembroPassApp(
-      authRepositorio: AuthRepositorioMock(latencia: Duration.zero),
-      planosRepositorio: PlanosRepositorioMock(),
-    ));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('botao-entrar-com-email')));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byKey(const Key('campo-email')), 'admin@membropass.dev');
-    await tester.enterText(find.byKey(const Key('campo-senha')), AuthRepositorioMock.senhaPadrao);
-    await tester.ensureVisible(find.byKey(const Key('botao-entrar')));
-    await tester.tap(find.byKey(const Key('botao-entrar')));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Clube Exemplo'), findsOneWidget);
-    await tester.tap(find.text('Planos'));
-    await tester.pumpAndSettle();
-  }
+  Future<void> abrirPlanos(WidgetTester tester) => entrarComoAdmin(tester, secao: 'Planos');
 
   Future<void> preencherPlano(WidgetTester tester, String nome, String valor, String dias) async {
     await tester.enterText(find.byKey(const Key('campo-nome-plano')), nome);

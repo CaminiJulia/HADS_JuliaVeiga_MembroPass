@@ -26,6 +26,7 @@ class ClienteApi {
   Future<dynamic> post(String caminho, Object corpo) => _enviar('POST', caminho, corpo);
   Future<dynamic> put(String caminho, Object corpo) => _enviar('PUT', caminho, corpo);
   Future<dynamic> patch(String caminho, Object corpo) => _enviar('PATCH', caminho, corpo);
+  Future<dynamic> delete(String caminho) => _enviar('DELETE', caminho);
 
   /// Devolve o JSON da resposta (ou `null` se vier vazia).
   /// Lança [ErroApi] quando a API responde com erro.
