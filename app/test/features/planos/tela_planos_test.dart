@@ -18,8 +18,22 @@ void main() {
     await abrirPlanos(tester);
 
     expect(find.text('Mensal'), findsOneWidget);
-    expect(find.text('R\$ 89,90 · ciclo de 30 dias'), findsOneWidget);
-    expect(find.text('R\$ 899,00 · ciclo de 365 dias'), findsOneWidget);
+    expect(find.text('2 planos ativos'), findsOneWidget);
+    expect(find.text('R\$ 89,90'), findsOneWidget);
+    expect(find.text('/ 30 dias'), findsOneWidget);
+    expect(find.text('R\$ 899,00'), findsOneWidget);
+    expect(find.text('/ 365 dias'), findsOneWidget);
+  });
+
+  testWidgets('mostra equivalente mensal e quantos membros e benefícios cada plano tem', (tester) async {
+    await abrirPlanos(tester);
+
+    // Anual: 899 × 30 / 365 ≈ 73,89 por mês. O mensal não mostra equivalente.
+    expect(find.text('≈ R\$ 73,89/mês'), findsOneWidget);
+    expect(find.textContaining('/mês'), findsOneWidget);
+    expect(find.text('2 membros'), findsOneWidget);
+    expect(find.text('1 membro'), findsOneWidget);
+    expect(find.text('1 benefício'), findsNWidgets(2));
   });
 
   testWidgets('cria um plano novo', (tester) async {
@@ -30,7 +44,8 @@ void main() {
     await preencherPlano(tester, 'Semestral', '1.479,9', '180');
 
     expect(find.text('Semestral'), findsOneWidget);
-    expect(find.text('R\$ 1.479,90 · ciclo de 180 dias'), findsOneWidget);
+    expect(find.text('R\$ 1.479,90'), findsOneWidget);
+    expect(find.text('/ 180 dias'), findsOneWidget);
   });
 
   testWidgets('valida o formulário e mostra nome repetido', (tester) async {
@@ -56,7 +71,7 @@ void main() {
     expect(find.widgetWithText(TextFormField, '89,90'), findsOneWidget);
     await preencherPlano(tester, 'Mensal', '99,90', '30');
 
-    expect(find.text('R\$ 99,90 · ciclo de 30 dias'), findsOneWidget);
+    expect(find.text('R\$ 99,90'), findsOneWidget);
   });
 
   testWidgets('desativa com confirmação e reativa', (tester) async {
