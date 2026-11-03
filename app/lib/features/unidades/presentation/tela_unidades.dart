@@ -245,53 +245,65 @@ class _CartaoLocal extends StatelessWidget {
     final situacao = local.situacao(hoje);
     final localizacao = local.localizacao;
 
+    final imagem = local.imagem;
     return CartaoItem(
       aoTocar: aoEditar,
       esmaecido: situacao == SituacaoEvento.encerrado,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 14, 4, 14),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            local.evento && local.dataInicio != null ? _FolhaCalendario(local.dataInicio!) : const _IconeUnidade(),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(local.nome, style: texto.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-                  if (situacao != null) ...[
-                    const SizedBox(height: 6),
-                    _SeloEvento(situacao, diasParaComecar: local.diasParaComecar(hoje)),
-                  ],
-                  const SizedBox(height: 8),
-                  if (local.evento && local.dataInicio != null && local.dataFim != null)
-                    _Detalhe(
-                      icone: Icons.event_outlined,
-                      texto: Datas.periodoPorExtenso(local.dataInicio!, local.dataFim!),
-                    ),
-                  if (localizacao != null) _Detalhe(icone: Icons.place_outlined, texto: localizacao),
-                  const SizedBox(height: 6),
-                  if (planos.isEmpty)
-                    Text(
-                      'Nenhum plano aceito',
-                      style: texto.bodySmall?.copyWith(color: Cores.erro, fontWeight: FontWeight.w600),
-                    )
-                  else
-                    Wrap(spacing: 6, runSpacing: 6, children: [for (final p in planos) EtiquetaPlano(p)]),
-                ],
-              ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Capa: foto do local ou banner do evento.
+          if (imagem != null)
+            AspectRatio(
+              aspectRatio: 16 / 7,
+              child: Image.memory(imagem, fit: BoxFit.cover, semanticLabel: 'Imagem de ${local.nome}'),
             ),
-            PopupMenuButton<VoidCallback>(
-              tooltip: 'Opções',
-              onSelected: (acao) => acao(),
-              itemBuilder: (_) => [
-                PopupMenuItem(value: aoEditar, child: const Text('Editar')),
-                PopupMenuItem(value: aoExcluir, child: const Text('Excluir')),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 4, 14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                local.evento && local.dataInicio != null ? _FolhaCalendario(local.dataInicio!) : const _IconeUnidade(),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(local.nome, style: texto.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                      if (situacao != null) ...[
+                        const SizedBox(height: 6),
+                        _SeloEvento(situacao, diasParaComecar: local.diasParaComecar(hoje)),
+                      ],
+                      const SizedBox(height: 8),
+                      if (local.evento && local.dataInicio != null && local.dataFim != null)
+                        _Detalhe(
+                          icone: Icons.event_outlined,
+                          texto: Datas.periodoPorExtenso(local.dataInicio!, local.dataFim!),
+                        ),
+                      if (localizacao != null) _Detalhe(icone: Icons.place_outlined, texto: localizacao),
+                      const SizedBox(height: 6),
+                      if (planos.isEmpty)
+                        Text(
+                          'Nenhum plano aceito',
+                          style: texto.bodySmall?.copyWith(color: Cores.erro, fontWeight: FontWeight.w600),
+                        )
+                      else
+                        Wrap(spacing: 6, runSpacing: 6, children: [for (final p in planos) EtiquetaPlano(p)]),
+                    ],
+                  ),
+                ),
+                PopupMenuButton<VoidCallback>(
+                  tooltip: 'Opções',
+                  onSelected: (acao) => acao(),
+                  itemBuilder: (_) => [
+                    PopupMenuItem(value: aoEditar, child: const Text('Editar')),
+                    PopupMenuItem(value: aoExcluir, child: const Text('Excluir')),
+                  ],
+                ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

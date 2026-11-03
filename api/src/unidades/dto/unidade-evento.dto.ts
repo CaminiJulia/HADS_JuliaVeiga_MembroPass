@@ -1,6 +1,7 @@
 import { Transform } from 'class-transformer';
 import {
   IsArray,
+  IsBase64,
   IsDateString,
   IsIn,
   IsNotEmpty,
@@ -8,6 +9,7 @@ import {
   IsString,
   IsUUID,
   MaxLength,
+  ValidateIf,
 } from 'class-validator';
 
 export class SalvarUnidadeEventoDto {
@@ -44,4 +46,18 @@ export class SalvarUnidadeEventoDto {
   @IsArray()
   @IsUUID('all', { each: true, message: 'Plano inválido.' })
   planoIds!: string[];
+
+  // Ausente: mantém a imagem atual. null: remove. Texto: nova imagem em base64.
+  @IsOptional()
+  @ValidateIf((_, valor) => valor !== null)
+  @IsBase64({}, { message: 'Imagem inválida.' })
+  imagem?: string | null;
+
+  @ValidateIf(
+    (dados: SalvarUnidadeEventoDto) => typeof dados.imagem === 'string',
+  )
+  @IsIn(['image/png', 'image/jpeg'], {
+    message: 'A imagem deve ser PNG ou JPEG.',
+  })
+  imagemTipo?: string;
 }

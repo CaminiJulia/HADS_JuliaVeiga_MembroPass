@@ -26,7 +26,8 @@ class UnidadesRepositorioMock implements UnidadesRepositorio {
   }
 
   @override
-  Future<UnidadeEvento> editar(String id, DadosUnidadeEvento dados) async => _locais[_indice(id)] = _deDados(id, dados);
+  Future<UnidadeEvento> editar(String id, DadosUnidadeEvento dados) async =>
+      _locais[_indice(id)] = _deDados(id, dados, anterior: _locais[_indice(id)]);
 
   @override
   Future<void> excluir(String id) async => _locais.removeAt(_indice(id));
@@ -37,7 +38,7 @@ class UnidadesRepositorioMock implements UnidadesRepositorio {
     return i;
   }
 
-  static UnidadeEvento _deDados(String id, DadosUnidadeEvento d) {
+  static UnidadeEvento _deDados(String id, DadosUnidadeEvento d, {UnidadeEvento? anterior}) {
     if (d.tipo == TipoLocal.evento && (d.dataInicio == null || d.dataFim == null)) {
       throw const ErroApi(400, 'Informe o início e o fim do evento.');
     }
@@ -50,6 +51,8 @@ class UnidadesRepositorioMock implements UnidadesRepositorio {
       dataInicio: evento ? d.dataInicio : null,
       dataFim: evento ? d.dataFim : null,
       planoIds: d.planoIds,
+      imagem: d.manterImagem ? anterior?.imagem : d.imagem,
+      imagemTipo: d.manterImagem ? anterior?.imagemTipo : d.imagemTipo,
     );
   }
 }

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/formatacao/datas.dart';
@@ -36,6 +38,12 @@ class _TelaFormularioUnidadeState extends State<TelaFormularioUnidade> {
         }
       : {...widget.local!.planoIds};
 
+  late Uint8List? _imagem = widget.local?.imagem;
+  late String? _imagemTipo = widget.local?.imagemTipo;
+  bool _imagemAlterada = false;
+
+  static const _tamanhoMaximoImagem = 512 * 1024;
+
   bool _salvando = false;
   String? _erro;
 
@@ -68,6 +76,33 @@ class _TelaFormularioUnidadeState extends State<TelaFormularioUnidade> {
     });
   }
 
+  Future<void> _escolherImagem() async {
+    final arquivo = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1200,
+      maxHeight: 800,
+      imageQuality: 80,
+    );
+    if (arquivo == null) return;
+    final bytes = await arquivo.readAsBytes();
+    if (!mounted) return;
+    if (bytes.length > _tamanhoMaximoImagem) {
+      avisar(context, 'A imagem pode ter no máximo 512 KB.');
+      return;
+    }
+    setState(() {
+      _imagem = bytes;
+      _imagemTipo = arquivo.name.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+      _imagemAlterada = true;
+    });
+  }
+
+  void _removerImagem() => setState(() {
+    _imagem = null;
+    _imagemTipo = null;
+    _imagemAlterada = true;
+  });
+
   Future<void> _salvar() async {
     if (_salvando || !_formulario.currentState!.validate()) return;
     final evento = _tipo == TipoLocal.evento;
@@ -93,6 +128,9 @@ class _TelaFormularioUnidadeState extends State<TelaFormularioUnidade> {
       dataInicio: evento ? _inicio : null,
       dataFim: evento ? _fim : null,
       planoIds: _planoIds.toList(),
+      manterImagem: !_imagemAlterada,
+      imagem: _imagem,
+      imagemTipo: _imagemTipo,
     );
     final repositorio = context.read<UnidadesRepositorio>();
     try {
@@ -165,6 +203,20 @@ class _TelaFormularioUnidadeState extends State<TelaFormularioUnidade> {
                         counterText: '',
                       ),
                     ),
+                    const SizedBox(height: 20),
+                    Text(evento ? 'Banner do evento' : 'Foto do local', style: titulo),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Opcional. Aparece como capa do cartão; de preferência na horizontal.',
+                      style: texto.bodySmall?.copyWith(color: Cores.textoSecundario),
+                    ),
+                    const SizedBox(height: 10),
+                    _CampoImagem(
+                      imagem: _imagem,
+                      habilitado: !_salvando,
+                      aoEscolher: _escolherImagem,
+                      aoRemover: _removerImagem,
+                    ),
                     if (evento) ...[
                       const SizedBox(height: 20),
                       Text('Período do evento', style: titulo),
@@ -217,6 +269,103 @@ class _TelaFormularioUnidadeState extends State<TelaFormularioUnidade> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Prévia da capa (16:7) com os botões de escolher, trocar e remover.
+class _CampoImagem extends StatelessWidget {
+  const _CampoImagem({
+    required this.imagem,
+    required this.habilitado,
+    required this.aoEscolher,
+    required this.aoRemover,
+  });
+
+  final Uint8List? imagem;
+  final bool habilitado;
+  final VoidCallback aoEscolher;
+  final VoidCallback aoRemover;
+
+  @override
+  Widget build(BuildContext context) {
+    final raio = BorderRadius.circular(16);
+    if (imagem == null) {
+      return InkWell(
+        key: const Key('botao-imagem-local'),
+        onTap: habilitado ? aoEscolher : null,
+        borderRadius: raio,
+        child: Container(
+          height: 120,
+          decoration: BoxDecoration(
+            color: Cores.superficie,
+            borderRadius: raio,
+            border: Border.all(color: Cores.borda),
+          ),
+          child: const Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.add_photo_alternate_outlined, color: Cores.primaria, size: 32),
+              SizedBox(height: 6),
+              Text(
+                'Escolher imagem',
+                style: TextStyle(color: Cores.primaria, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return ClipRRect(
+      borderRadius: raio,
+      child: Stack(
+        children: [
+          AspectRatio(
+            aspectRatio: 16 / 7,
+            child: Image.memory(imagem!, fit: BoxFit.cover, width: double.infinity),
+          ),
+          Positioned(
+            right: 8,
+            bottom: 8,
+            child: Row(
+              children: [
+                _BotaoSobreImagem(
+                  icone: Icons.edit_outlined,
+                  dica: 'Trocar imagem',
+                  aoTocar: habilitado ? aoEscolher : null,
+                ),
+                const SizedBox(width: 8),
+                _BotaoSobreImagem(
+                  icone: Icons.delete_outline,
+                  dica: 'Remover imagem',
+                  aoTocar: habilitado ? aoRemover : null,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BotaoSobreImagem extends StatelessWidget {
+  const _BotaoSobreImagem({required this.icone, required this.dica, required this.aoTocar});
+
+  final IconData icone;
+  final String dica;
+  final VoidCallback? aoTocar;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black.withValues(alpha: 0.55),
+      shape: const CircleBorder(),
+      child: IconButton(
+        tooltip: dica,
+        onPressed: aoTocar,
+        icon: Icon(icone, color: Colors.white, size: 20),
       ),
     );
   }

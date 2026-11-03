@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import '../../../core/formatacao/datas.dart';
 
 enum TipoLocal { unidade, evento }
@@ -15,6 +18,8 @@ class UnidadeEvento {
     this.localizacao,
     this.dataInicio,
     this.dataFim,
+    this.imagem,
+    this.imagemTipo,
   });
 
   factory UnidadeEvento.deJson(Map<String, dynamic> json) => UnidadeEvento(
@@ -25,6 +30,8 @@ class UnidadeEvento {
     dataInicio: Datas.daApi(json['dataInicio'] as String?),
     dataFim: Datas.daApi(json['dataFim'] as String?),
     planoIds: [for (final id in json['planoIds'] as List) id as String],
+    imagem: json['imagem'] == null ? null : base64Decode(json['imagem'] as String),
+    imagemTipo: json['imagemTipo'] as String?,
   );
 
   final String id;
@@ -38,6 +45,10 @@ class UnidadeEvento {
 
   /// Planos aceitos neste local; o check-in recusa os demais (RF10).
   final List<String> planoIds;
+
+  /// Foto do local ou banner do evento (PNG ou JPEG), usada como capa.
+  final Uint8List? imagem;
+  final String? imagemTipo;
 
   bool get evento => tipo == TipoLocal.evento;
 
@@ -66,6 +77,9 @@ class DadosUnidadeEvento {
     this.localizacao,
     this.dataInicio,
     this.dataFim,
+    this.manterImagem = true,
+    this.imagem,
+    this.imagemTipo,
   });
 
   final String nome;
@@ -75,6 +89,11 @@ class DadosUnidadeEvento {
   final DateTime? dataFim;
   final List<String> planoIds;
 
+  /// `true` mantém a imagem atual; senão, [imagem] é a nova (ou `null` para remover).
+  final bool manterImagem;
+  final Uint8List? imagem;
+  final String? imagemTipo;
+
   Map<String, Object?> paraJson() => {
     'nome': nome,
     'tipo': tipo == TipoLocal.evento ? 'EVENTO' : 'UNIDADE',
@@ -82,6 +101,10 @@ class DadosUnidadeEvento {
     'dataInicio': dataInicio == null ? null : Datas.paraApi(dataInicio!),
     'dataFim': dataFim == null ? null : Datas.paraApi(dataFim!),
     'planoIds': planoIds,
+    if (!manterImagem) ...{
+      'imagem': imagem == null ? null : base64Encode(imagem!),
+      'imagemTipo': imagem == null ? null : imagemTipo,
+    },
   };
 }
 

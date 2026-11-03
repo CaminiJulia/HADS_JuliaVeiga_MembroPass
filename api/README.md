@@ -28,7 +28,7 @@ então cada usuário só enxerga e altera os dados da própria organização.
 | `POST` | `/membros/:id/desbloquear` | admin | Desbloqueio |
 | `GET` | `/membros/:id/historico` | admin | Auditoria do membro |
 | `GET` `POST` | `/unidades-eventos` | admin | Listar e criar unidades e eventos (RF11) |
-| `PUT` `DELETE` | `/unidades-eventos/:id` | admin | Editar e excluir |
+| `PUT` `DELETE` | `/unidades-eventos/:id` | admin | Editar (inclusive a imagem de capa, em base64, até 512 KB) e excluir |
 | `GET` | `/auditoria` | admin | Últimas 200 ações da organização (RF16) |
 
 ## Banco de dados

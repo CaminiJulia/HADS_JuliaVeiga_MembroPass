@@ -25,6 +25,8 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byKey(const Key('campo-nome-local')), 'Filial Norte');
+    expect(find.text('Foto do local'), findsOneWidget);
+    await rolarAte(tester, find.byKey(const Key('botao-salvar-local')));
     await tester.tap(find.byKey(const Key('botao-salvar-local')));
     await tester.pumpAndSettle();
 
@@ -40,6 +42,7 @@ void main() {
 
     await tester.tap(find.text('Evento'));
     await tester.pumpAndSettle();
+    expect(find.text('Banner do evento'), findsOneWidget);
     await tester.enterText(find.byKey(const Key('campo-nome-local')), 'Torneio');
     await tester.ensureVisible(find.byKey(const Key('botao-salvar-local')));
     await tester.tap(find.byKey(const Key('botao-salvar-local')));

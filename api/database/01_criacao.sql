@@ -146,6 +146,10 @@ CREATE TABLE unidade_evento (
     localizacao     VARCHAR(255),
     data_inicio     DATE,
     data_fim        DATE,
+    -- Foto do local ou banner do evento, exibida como capa do cartão.
+    imagem          BYTEA CHECK (octet_length(imagem) <= 524288),
+    imagem_tipo     VARCHAR(20) CHECK (imagem_tipo IN ('image/png', 'image/jpeg')),
+    CHECK ((imagem IS NULL) = (imagem_tipo IS NULL)),
     -- Evento tem período; unidade não.
     CHECK (
         (tipo = 'EVENTO' AND data_inicio IS NOT NULL AND data_fim IS NOT NULL AND data_fim >= data_inicio)

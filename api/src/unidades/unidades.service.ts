@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { BancoService } from '../banco/banco.service';
+import { BancoService, Consulta } from '../banco/banco.service';
 import { vincularPlanos } from '../planos/vincular-planos';
 import { SalvarUnidadeEventoDto } from './dto/unidade-evento.dto';
 
@@ -15,6 +15,8 @@ export interface UnidadeEvento {
   dataInicio: string | null;
   dataFim: string | null;
   planoIds: string[];
+  imagem: string | null;
+  imagemTipo: string | null;
 }
 
 interface LinhaUnidadeEvento {
@@ -25,15 +27,19 @@ interface LinhaUnidadeEvento {
   data_inicio: string | null;
   data_fim: string | null;
   plano_ids: string[];
+  imagem: Buffer | null;
+  imagem_tipo: string | null;
 }
 
 const SQL_LISTAR = `
-  SELECT u.id, u.nome, u.tipo, u.localizacao, u.data_inicio, u.data_fim,
+  SELECT u.id, u.nome, u.tipo, u.localizacao, u.data_inicio, u.data_fim, u.imagem, u.imagem_tipo,
          COALESCE(array_agg(up.plano_id) FILTER (WHERE up.plano_id IS NOT NULL), '{}') AS plano_ids
   FROM unidade_evento u
   LEFT JOIN unidade_evento_plano up ON up.unidade_evento_id = u.id
   WHERE u.organizacao_id = $1
 `;
+
+const TAMANHO_MAXIMO_IMAGEM = 512 * 1024;
 
 // RF11. Sempre filtrado pela organização do token (multi-tenant).
 @Injectable()
@@ -57,6 +63,7 @@ export class UnidadesService {
          RETURNING id`,
         [organizacaoId, ...valores],
       );
+      await salvarImagem(consultar, id, dados);
       await vincularPlanos(
         consultar,
         'unidadeEvento',
@@ -86,6 +93,7 @@ export class UnidadesService {
       if (linhas.length === 0) {
         throw new NotFoundException('Unidade ou evento não encontrado.');
       }
+      await salvarImagem(consultar, id, dados);
       await vincularPlanos(
         consultar,
         'unidadeEvento',
@@ -114,6 +122,24 @@ export class UnidadesService {
     );
     return paraUnidadeEvento(linha);
   }
+}
+
+// Grava ou remove a imagem só quando ela vier na requisição (ausente = mantém).
+async function salvarImagem(
+  consultar: Consulta,
+  id: string,
+  dados: SalvarUnidadeEventoDto,
+) {
+  if (dados.imagem === undefined) return;
+  const imagem =
+    dados.imagem === null ? null : Buffer.from(dados.imagem, 'base64');
+  if (imagem && imagem.length > TAMANHO_MAXIMO_IMAGEM) {
+    throw new BadRequestException('A imagem pode ter no máximo 512 KB.');
+  }
+  await consultar(
+    'UPDATE unidade_evento SET imagem = $2, imagem_tipo = $3 WHERE id = $1',
+    [id, imagem, imagem ? dados.imagemTipo : null],
+  );
 }
 
 // Evento exige início e fim, com o fim depois do início; unidade não tem datas.
@@ -147,5 +173,7 @@ function paraUnidadeEvento(linha: LinhaUnidadeEvento): UnidadeEvento {
     dataInicio: linha.data_inicio,
     dataFim: linha.data_fim,
     planoIds: linha.plano_ids,
+    imagem: linha.imagem ? linha.imagem.toString('base64') : null,
+    imagemTipo: linha.imagem_tipo,
   };
 }
