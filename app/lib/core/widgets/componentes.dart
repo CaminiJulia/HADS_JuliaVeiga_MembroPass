@@ -100,9 +100,8 @@ class CarregandoBotao extends StatelessWidget {
 }
 
 /// Mensagem para mostrar ao usuário a partir de um erro qualquer.
-String mensagemDeErro(Object erro) => erro is ErroApi
-    ? erro.mensagem
-    : 'Não foi possível falar com o servidor. Verifique sua conexão.';
+String mensagemDeErro(Object erro) =>
+    erro is ErroApi ? erro.mensagem : 'Não foi possível falar com o servidor. Verifique sua conexão.';
 
 /// SnackBar curta, substituindo a anterior.
 void avisar(BuildContext context, String mensagem) {
@@ -147,14 +146,24 @@ class CampoData extends StatelessWidget {
       onTap: aoEscolher,
       borderRadius: BorderRadius.circular(12),
       child: InputDecorator(
+        // Sem ícone à esquerda, para a data caber inteira mesmo em meia largura.
         decoration: InputDecoration(
           labelText: rotulo,
-          prefixIcon: const Icon(Icons.event_outlined),
           suffixIcon: data == null
-              ? null
-              : IconButton(tooltip: 'Limpar $rotulo', icon: const Icon(Icons.close), onPressed: aoLimpar),
+              ? const Icon(Icons.event_outlined)
+              : IconButton(
+                  tooltip: 'Limpar $rotulo',
+                  icon: const Icon(Icons.close, size: 20),
+                  visualDensity: VisualDensity.compact,
+                  onPressed: aoLimpar,
+                ),
         ),
-        child: Text(data == null ? '—' : Datas.formatar(data!)),
+        child: Text(
+          data == null ? 'Escolher' : Datas.formatar(data!),
+          maxLines: 1,
+          softWrap: false,
+          style: data == null ? const TextStyle(color: Cores.textoSecundario) : null,
+        ),
       ),
     );
   }
@@ -170,10 +179,7 @@ class CaixaInfo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Cores.primaria.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(12),
-      ),
+      decoration: BoxDecoration(color: Cores.primaria.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(12)),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

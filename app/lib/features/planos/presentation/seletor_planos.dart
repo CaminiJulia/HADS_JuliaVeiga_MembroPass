@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/tema/cores.dart';
 import '../domain/plano.dart';
+import 'cor_plano.dart';
 
 /// Chips para marcar planos. Mostra os ativos e os já marcados (mesmo se inativos).
 class SeletorPlanos extends StatelessWidget {
@@ -36,6 +37,8 @@ class SeletorPlanos extends StatelessWidget {
       children: [
         for (final plano in visiveis)
           FilterChip(
+            // Marcado, o chip mostra o ✓; desmarcado, o ponto na cor do plano.
+            avatar: selecionados.contains(plano.id) ? null : PontoCorPlano(plano.cor, tamanho: 10),
             label: Text(plano.nome),
             selected: selecionados.contains(plano.id),
             onSelected: habilitado ? (marcado) => aoAlterar(plano.id, marcado) : null,

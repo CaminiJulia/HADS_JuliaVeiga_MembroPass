@@ -28,9 +28,10 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byKey(const Key('campo-nome-beneficio')), 'Cinema');
+    await rolarAte(tester, find.byKey(const Key('campo-valor-beneficio')));
     await tester.tap(find.text('Valor (R\$)'));
     await tester.enterText(find.byKey(const Key('campo-valor-beneficio')), '20');
-    await tester.ensureVisible(find.widgetWithText(FilterChip, 'Anual'));
+    await rolarAte(tester, find.widgetWithText(FilterChip, 'Anual'));
     await tester.tap(find.widgetWithText(FilterChip, 'Anual'));
     await tester.ensureVisible(find.byKey(const Key('botao-salvar-beneficio')));
     await tester.tap(find.byKey(const Key('botao-salvar-beneficio')));
@@ -47,6 +48,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byKey(const Key('campo-nome-beneficio')), 'X');
+    await rolarAte(tester, find.byKey(const Key('campo-valor-beneficio')));
     await tester.enterText(find.byKey(const Key('campo-valor-beneficio')), '150');
     await tester.ensureVisible(find.byKey(const Key('botao-salvar-beneficio')));
     await tester.tap(find.byKey(const Key('botao-salvar-beneficio')));
