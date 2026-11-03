@@ -46,7 +46,7 @@ void main() {
     await tester.tap(find.byKey(const Key('botao-salvar-membro')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Eva Nunes foi cadastrado'), findsOneWidget);
+    expect(find.text('Cadastro de Eva Nunes criado'), findsOneWidget);
     expect(find.text(MembrosRepositorioMock.senhaProvisoria), findsOneWidget);
     await tester.tap(find.text('Pronto'));
     await tester.pumpAndSettle();
@@ -70,19 +70,21 @@ void main() {
     expect(find.text('Este e-mail já está em uso por outra conta.'), findsOneWidget);
   });
 
-  testWidgets('desativa pelo detalhe, com confirmação', (tester) async {
+  testWidgets('desativa pelo detalhe, com motivo opcional', (tester) async {
     await abrirMembros(tester);
     await tester.tap(find.text('Marina Membro'));
     await tester.pumpAndSettle();
 
     expect(find.text('membro@membropass.dev'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Desativar membro'), 200, scrollable: find.byType(Scrollable).last);
     await tester.tap(find.text('Desativar membro'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Desativar'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Carteirinha invalidada'), findsOneWidget);
+    expect(find.text('Cadastro de Marina Membro desativado.'), findsOneWidget);
     expect(find.text('Reativar membro'), findsOneWidget);
+    expect(find.text('Confirmar pagamento'), findsNothing);
   });
 
   group('Membro.situacao', () {
@@ -94,6 +96,7 @@ void main() {
           email: 'a@b.com',
           planoId: 'p',
           planoNome: 'Mensal',
+          planoDuracaoDias: 30,
           dataAdesao: hoje,
           ativo: ativo,
           carteirinha: Carteirinha(status: status, dataVencimento: hoje.add(Duration(days: venceEm)), qrVersao: 1),

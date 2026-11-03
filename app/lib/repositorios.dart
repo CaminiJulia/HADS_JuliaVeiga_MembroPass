@@ -2,6 +2,8 @@ import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 
 import 'core/api/cliente_api.dart';
+import 'features/auditoria/data/auditoria_repositorio_api.dart';
+import 'features/auditoria/domain/registro_auditoria.dart';
 import 'features/auth/data/auth_repositorio_api.dart';
 import 'features/auth/data/auth_repositorio_mock.dart';
 import 'features/auth/domain/auth_repositorio.dart';
@@ -22,6 +24,7 @@ class Repositorios {
     required this.planos,
     required this.beneficios,
     required this.membros,
+    required this.auditoria,
   });
 
   /// Implementações que falam com a API, compartilhando o mesmo token.
@@ -30,25 +33,32 @@ class Repositorios {
         planos: PlanosRepositorioApi(api),
         beneficios: BeneficiosRepositorioApi(api),
         membros: MembrosRepositorioApi(api),
+        auditoria: AuditoriaRepositorioApi(api),
       );
 
   /// Implementações em memória, para os testes.
-  factory Repositorios.simulados() => Repositorios(
-        auth: AuthRepositorioMock(latencia: Duration.zero),
-        planos: PlanosRepositorioMock(),
-        beneficios: BeneficiosRepositorioMock(),
-        membros: MembrosRepositorioMock(),
-      );
+  factory Repositorios.simulados() {
+    final membros = MembrosRepositorioMock();
+    return Repositorios(
+      auth: AuthRepositorioMock(latencia: Duration.zero),
+      planos: PlanosRepositorioMock(),
+      beneficios: BeneficiosRepositorioMock(),
+      membros: membros,
+      auditoria: AuditoriaRepositorioMock(membros),
+    );
+  }
 
   final AuthRepositorio auth;
   final PlanosRepositorio planos;
   final BeneficiosRepositorio beneficios;
   final MembrosRepositorio membros;
+  final AuditoriaRepositorio auditoria;
 
   List<SingleChildWidget> get providers => [
         Provider<AuthRepositorio>.value(value: auth),
         Provider<PlanosRepositorio>.value(value: planos),
         Provider<BeneficiosRepositorio>.value(value: beneficios),
         Provider<MembrosRepositorio>.value(value: membros),
+        Provider<AuditoriaRepositorio>.value(value: auditoria),
       ];
 }

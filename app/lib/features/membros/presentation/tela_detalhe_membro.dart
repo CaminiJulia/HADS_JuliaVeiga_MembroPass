@@ -4,12 +4,15 @@ import 'package:provider/provider.dart';
 import '../../../core/formatacao/datas.dart';
 import '../../../core/tema/cores.dart';
 import '../../../core/widgets/componentes.dart';
+import '../../auditoria/domain/registro_auditoria.dart';
+import '../../auditoria/presentation/item_auditoria.dart';
 import '../domain/membro.dart';
 import '../domain/membros_repositorio.dart';
+import 'dialogos_ciclo.dart';
 import 'tela_formulario_membro.dart';
 import 'widgets/visual_membro.dart';
 
-/// Dados do membro, situação da carteirinha e ações do administrador.
+/// Dados do membro, carteirinha, ações do administrador (RF07) e histórico (RF16).
 class TelaDetalheMembro extends StatefulWidget {
   const TelaDetalheMembro({super.key, required this.membroId});
 
@@ -21,6 +24,7 @@ class TelaDetalheMembro extends StatefulWidget {
 
 class _TelaDetalheMembroState extends State<TelaDetalheMembro> {
   Membro? _membro;
+  List<RegistroAuditoria> _historico = const [];
   String? _erro;
   bool _ocupado = false;
 
@@ -35,20 +39,33 @@ class _TelaDetalheMembroState extends State<TelaDetalheMembro> {
   Future<void> _carregar() async {
     setState(() => _erro = null);
     try {
-      final membro = await _repositorio.buscar(widget.membroId);
-      if (mounted) setState(() => _membro = membro);
+      final (membro, historico) = await (
+        _repositorio.buscar(widget.membroId),
+        _repositorio.historico(widget.membroId),
+      ).wait;
+      if (mounted) {
+        setState(() {
+          _membro = membro;
+          _historico = historico;
+        });
+      }
     } catch (e) {
-      if (mounted) setState(() => _erro = mensagemDeErro(e));
+      final erro = e is ParallelWaitError ? e.errors.$1 ?? e.errors.$2 : e;
+      if (mounted) setState(() => _erro = mensagemDeErro(erro!));
     }
   }
 
-  /// Executa uma ação que devolve o membro atualizado, com aviso de sucesso.
+  /// Executa uma ação que devolve o membro atualizado e recarrega o histórico.
   Future<void> _executar(Future<Membro> Function() acao, String sucesso) async {
     setState(() => _ocupado = true);
     try {
       final membro = await acao();
+      final historico = await _repositorio.historico(membro.id);
       if (!mounted) return;
-      setState(() => _membro = membro);
+      setState(() {
+        _membro = membro;
+        _historico = historico;
+      });
       avisar(context, sucesso);
     } catch (e) {
       if (mounted) avisar(context, mensagemDeErro(e));
@@ -66,20 +83,56 @@ class _TelaDetalheMembroState extends State<TelaDetalheMembro> {
     avisar(context, 'Dados de ${atualizado.nome} atualizados.');
   }
 
+  Future<void> _confirmarPagamento(Membro membro) async {
+    final data = await pedirDataPagamento(context, membro);
+    if (data == null) return;
+    await _executar(
+      () => _repositorio.confirmarPagamento(membro.id, data),
+      'Pagamento confirmado. Novo vencimento: ${Datas.formatar(membro.novoVencimento(data))}.',
+    );
+  }
+
+  Future<void> _bloquear(Membro membro) async {
+    final justificativa = await pedirJustificativa(
+      context,
+      titulo: 'Bloquear a carteirinha de ${membro.nome}?',
+      mensagem: 'O QR Code atual deixa de valer até você desbloquear ou confirmar um novo pagamento.',
+      rotulo: 'Motivo do bloqueio',
+      acao: 'Bloquear',
+      obrigatoria: true,
+    );
+    if (justificativa == null) return;
+    await _executar(() => _repositorio.bloquear(membro.id, justificativa), 'Carteirinha bloqueada.');
+  }
+
+  Future<void> _desbloquear(Membro membro) async {
+    final confirmou = await confirmar(
+      context,
+      titulo: 'Desbloquear a carteirinha?',
+      mensagem: 'A carteirinha de ${membro.nome} volta a valer com um QR Code novo.',
+      acao: 'Desbloquear',
+    );
+    if (!confirmou) return;
+    await _executar(() => _repositorio.desbloquear(membro.id), 'Carteirinha desbloqueada.');
+  }
+
   Future<void> _alterarAtivo(Membro membro) async {
-    if (membro.ativo &&
-        !await confirmar(
-          context,
-          titulo: 'Desativar ${membro.nome}?',
-          mensagem: 'A carteirinha deixa de valer e o membro não consegue mais entrar no app. '
-              'Você pode reativar depois.',
-          acao: 'Desativar',
-        )) {
-      return;
+    String? justificativa;
+    if (membro.ativo) {
+      justificativa = await pedirJustificativa(
+        context,
+        titulo: 'Desativar ${membro.nome}?',
+        mensagem: 'A carteirinha deixa de valer e o membro não consegue mais entrar no app. '
+            'Você pode reativar depois.',
+        rotulo: 'Motivo (opcional)',
+        acao: 'Desativar',
+        obrigatoria: false,
+      );
+      if (justificativa == null) return;
     }
     await _executar(
-      () => _repositorio.alterarAtivo(membro.id, ativo: !membro.ativo),
-      membro.ativo ? '${membro.nome} foi desativado.' : '${membro.nome} foi reativado.',
+      () => _repositorio.alterarAtivo(membro.id, ativo: !membro.ativo, justificativa: justificativa),
+      membro.ativo ? 'Cadastro de ${membro.nome} desativado.' : 'Cadastro de ${membro.nome} reativado.',
     );
   }
 
@@ -110,6 +163,7 @@ class _TelaDetalheMembroState extends State<TelaDetalheMembro> {
     final texto = Theme.of(context).textTheme;
     final hoje = Datas.hoje();
     final situacao = membro.situacao(hoje);
+    final bloqueada = membro.carteirinha.status == StatusCarteirinha.bloqueada;
 
     return ListView(
       padding: const EdgeInsets.all(20),
@@ -135,18 +189,45 @@ class _TelaDetalheMembroState extends State<TelaDetalheMembro> {
         ),
         const SizedBox(height: 20),
         _CartaoCarteirinha(membro: membro, hoje: hoje),
+        if (membro.ativo) ...[
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            key: const Key('botao-confirmar-pagamento'),
+            onPressed: _ocupado ? null : () => _confirmarPagamento(membro),
+            icon: const Icon(Icons.payments_outlined),
+            label: const Text('Confirmar pagamento'),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _ocupado ? null : () => bloqueada ? _desbloquear(membro) : _bloquear(membro),
+            style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+            icon: Icon(bloqueada ? Icons.lock_open_outlined : Icons.block),
+            label: Text(bloqueada ? 'Desbloquear carteirinha' : 'Bloquear carteirinha'),
+          ),
+        ],
         const SizedBox(height: 20),
         _Linha(icone: Icons.mail_outline, rotulo: 'E-mail', valor: membro.email),
         _Linha(icone: Icons.phone_outlined, rotulo: 'Telefone', valor: membro.telefone ?? 'Não informado'),
-        _Linha(icone: Icons.workspace_premium_outlined, rotulo: 'Plano', valor: membro.planoNome),
+        _Linha(
+          icone: Icons.workspace_premium_outlined,
+          rotulo: 'Plano',
+          valor: '${membro.planoNome} (ciclo de ${membro.planoDuracaoDias} dias)',
+        ),
         _Linha(icone: Icons.event_available_outlined, rotulo: 'Membro desde', valor: Datas.formatar(membro.dataAdesao)),
+        const SizedBox(height: 20),
+        Text('Histórico', style: texto.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: Cores.tinta)),
+        const SizedBox(height: 8),
+        if (_historico.isEmpty)
+          Text(
+            'Nenhuma ação registrada ainda.',
+            style: texto.bodyMedium?.copyWith(color: Cores.textoSecundario),
+          )
+        else
+          for (final registro in _historico) ItemAuditoria(registro, mostrarDescricao: false),
         const SizedBox(height: 24),
-        OutlinedButton.icon(
+        TextButton.icon(
           onPressed: _ocupado ? null : () => _alterarAtivo(membro),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: membro.ativo ? Cores.erro : Cores.primaria,
-            minimumSize: const Size.fromHeight(48),
-          ),
+          style: TextButton.styleFrom(foregroundColor: membro.ativo ? Cores.erro : Cores.primaria),
           icon: Icon(membro.ativo ? Icons.person_off_outlined : Icons.person_outline),
           label: Text(membro.ativo ? 'Desativar membro' : 'Reativar membro'),
         ),
@@ -167,6 +248,8 @@ class _CartaoCarteirinha extends StatelessWidget {
     final texto = Theme.of(context).textTheme;
     final c = membro.carteirinha;
     final statusTexto = switch (c.status) {
+      // Ativa no banco, mas vencida: o QR Code não passa no check-in.
+      StatusCarteirinha.ativa when membro.diasParaVencer(hoje) < 0 => 'Carteirinha vencida',
       StatusCarteirinha.ativa => 'Carteirinha ativa',
       StatusCarteirinha.bloqueada => 'Carteirinha bloqueada',
       StatusCarteirinha.invalidada => 'Carteirinha invalidada',
@@ -180,7 +263,8 @@ class _CartaoCarteirinha extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.qr_code_2, size: 48, color: Colors.white),
+          Icon(c.status == StatusCarteirinha.ativa ? Icons.qr_code_2 : Icons.qr_code_2_outlined,
+              size: 48, color: c.status == StatusCarteirinha.ativa ? Colors.white : Colors.white38),
           const SizedBox(width: 16),
           Expanded(
             child: Column(

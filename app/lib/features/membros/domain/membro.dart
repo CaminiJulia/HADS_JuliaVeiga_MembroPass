@@ -40,6 +40,7 @@ class Membro {
     required this.email,
     required this.planoId,
     required this.planoNome,
+    required this.planoDuracaoDias,
     required this.dataAdesao,
     required this.ativo,
     required this.carteirinha,
@@ -53,6 +54,7 @@ class Membro {
         telefone: json['telefone'] as String?,
         planoId: json['planoId'] as String,
         planoNome: json['planoNome'] as String,
+        planoDuracaoDias: json['planoDuracaoDias'] as int,
         dataAdesao: DateTime.parse(json['dataAdesao'] as String),
         ativo: json['status'] == 'ATIVO',
         carteirinha: Carteirinha.deJson(json['carteirinha'] as Map<String, dynamic>),
@@ -67,6 +69,9 @@ class Membro {
   final String? telefone;
   final String planoId;
   final String planoNome;
+
+  /// Duração do ciclo do plano atual, usada no próximo pagamento.
+  final int planoDuracaoDias;
   final DateTime dataAdesao;
   final bool ativo;
   final Carteirinha carteirinha;
@@ -93,6 +98,28 @@ class Membro {
     if (dias == -1) return 'Venceu ontem ($data)';
     return 'Venceu há ${-dias} dias ($data)';
   }
+
+  /// Vencimento depois de confirmar um pagamento feito em [dataPagamento]:
+  /// conta do vencimento atual ou do pagamento (o que for maior), mais a
+  /// duração do plano. Mesma regra da função liberar_ciclo do banco.
+  DateTime novoVencimento(DateTime dataPagamento) {
+    final base = dataPagamento.isAfter(carteirinha.dataVencimento) ? dataPagamento : carteirinha.dataVencimento;
+    return DateTime(base.year, base.month, base.day + planoDuracaoDias);
+  }
+
+  /// Cópia com outra carteirinha ou outro status (usada pelo repositório simulado).
+  Membro copyWith({Carteirinha? carteirinha, bool? ativo}) => Membro(
+        id: id,
+        nome: nome,
+        email: email,
+        telefone: telefone,
+        planoId: planoId,
+        planoNome: planoNome,
+        planoDuracaoDias: planoDuracaoDias,
+        dataAdesao: dataAdesao,
+        ativo: ativo ?? this.ativo,
+        carteirinha: carteirinha ?? this.carteirinha,
+      );
 
   /// Iniciais para o avatar: "Marina Membro" → "MM".
   String get iniciais {

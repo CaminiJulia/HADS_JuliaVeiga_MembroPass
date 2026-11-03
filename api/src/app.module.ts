@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { AuditoriaController } from './auditoria/auditoria.controller';
 import { AuthModule } from './auth/auth.module';
 import { BancoModule } from './banco/banco.module';
 import { BeneficiosModule } from './beneficios/beneficios.module';
@@ -16,6 +17,6 @@ import { SaudeController } from './saude.controller';
     BeneficiosModule,
     MembrosModule,
   ],
-  controllers: [SaudeController],
+  controllers: [SaudeController, AuditoriaController],
 })
 export class AppModule {}

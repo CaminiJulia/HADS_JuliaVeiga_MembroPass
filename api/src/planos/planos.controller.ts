@@ -34,7 +34,7 @@ export class PlanosController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dados: SalvarPlanoDto,
   ) {
-    return this.planos.editar(usuario.organizacaoId, id, dados);
+    return this.planos.editar(usuario.organizacaoId, id, dados, usuario);
   }
 
   @Patch(':id/status')

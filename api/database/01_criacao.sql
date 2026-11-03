@@ -6,6 +6,10 @@ CREATE TYPE status_cadastro AS ENUM ('ATIVO', 'INATIVO');
 CREATE TYPE status_membro AS ENUM ('ATIVO', 'DESATIVADO', 'CANCELADO');
 CREATE TYPE tipo_desconto AS ENUM ('PERCENTUAL', 'VALOR');
 CREATE TYPE status_carteirinha AS ENUM ('ATIVA', 'BLOQUEADA', 'INVALIDADA');
+CREATE TYPE acao_auditoria AS ENUM (
+    'LIBERACAO_CICLO', 'BLOQUEIO_MANUAL', 'DESBLOQUEIO',
+    'DESATIVACAO_MEMBRO', 'REATIVACAO_MEMBRO', 'EDICAO_PLANO'
+);
 
 CREATE TABLE organizacao (
     id      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -68,6 +72,36 @@ CREATE TABLE carteirinha (
     data_vencimento  DATE NOT NULL,
     status           status_carteirinha NOT NULL DEFAULT 'ATIVA'
 );
+
+-- RF07: cada pagamento confirmado manualmente pelo administrador libera um novo ciclo.
+CREATE TABLE liberacao_ciclo (
+    id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    membro_id            UUID NOT NULL REFERENCES membro (id),
+    confirmado_por       UUID NOT NULL REFERENCES administrador (id),
+    data_pagamento       DATE NOT NULL,
+    data_confirmacao     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    vencimento_anterior  DATE NOT NULL,
+    novo_vencimento      DATE NOT NULL,
+    valor_referencia     NUMERIC(10, 2) NOT NULL
+);
+
+CREATE INDEX liberacao_ciclo_membro_idx ON liberacao_ciclo (membro_id);
+
+-- RF16: registro imutável das ações sensíveis do administrador.
+CREATE TABLE auditoria (
+    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organizacao_id    UUID NOT NULL REFERENCES organizacao (id),
+    administrador_id  UUID NOT NULL REFERENCES administrador (id),
+    acao              acao_auditoria NOT NULL,
+    entidade          VARCHAR(50) NOT NULL,
+    entidade_id       UUID NOT NULL,
+    descricao         TEXT NOT NULL,
+    justificativa     TEXT,
+    data_hora         TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX auditoria_organizacao_data_idx ON auditoria (organizacao_id, data_hora DESC);
+CREATE INDEX auditoria_entidade_idx ON auditoria (entidade_id);
 
 -- RF08: benefícios oferecidos pela organização, com vigência opcional.
 CREATE TABLE beneficio (

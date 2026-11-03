@@ -1,5 +1,6 @@
 import { Transform } from 'class-transformer';
 import {
+  IsDateString,
   IsEmail,
   IsIn,
   IsNotEmpty,
@@ -12,6 +13,14 @@ import {
 
 const aparar = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim() : value;
+
+// Texto opcional: tira espaços e transforma vazio em null.
+const opcional = ({ value }: { value: unknown }) =>
+  typeof value === 'string' ? value.trim() || null : value;
+
+const MAXIMO_JUSTIFICATIVA = {
+  message: 'A justificativa pode ter no máximo 500 caracteres.',
+};
 
 export class SalvarMembroDto {
   @Transform(aparar)
@@ -27,10 +36,7 @@ export class SalvarMembroDto {
   @MaxLength(255)
   email!: string;
 
-  // Telefone opcional; vazio vira null.
-  @Transform(({ value }: { value: unknown }) =>
-    typeof value === 'string' ? value.trim() || null : value,
-  )
+  @Transform(opcional)
   @IsOptional()
   @Matches(/^[\d\s()+-]{8,20}$/, { message: 'Informe um telefone válido.' })
   telefone?: string | null;
@@ -42,6 +48,35 @@ export class SalvarMembroDto {
 export class AlterarStatusMembroDto {
   @IsIn(['ATIVO', 'DESATIVADO'], { message: 'Status inválido.' })
   status!: 'ATIVO' | 'DESATIVADO';
+
+  @Transform(opcional)
+  @IsOptional()
+  @IsString()
+  @MaxLength(500, MAXIMO_JUSTIFICATIVA)
+  justificativa?: string | null;
+}
+
+export class LiberarCicloDto {
+  // Padrão: hoje. Não pode ser futura (a função liberar_ciclo valida).
+  @IsOptional()
+  @IsDateString({ strict: true }, { message: 'Data do pagamento inválida.' })
+  dataPagamento?: string;
+}
+
+export class BloquearDto {
+  @Transform(aparar)
+  @IsString()
+  @IsNotEmpty({ message: 'Informe o motivo do bloqueio.' })
+  @MaxLength(500, MAXIMO_JUSTIFICATIVA)
+  justificativa!: string;
+}
+
+export class DesbloquearDto {
+  @Transform(opcional)
+  @IsOptional()
+  @IsString()
+  @MaxLength(500, MAXIMO_JUSTIFICATIVA)
+  justificativa?: string | null;
 }
 
 export class BuscarMembrosDto {

@@ -5,12 +5,14 @@ import 'package:provider/provider.dart';
 import 'core/rotas.dart';
 import 'core/tema/tema.dart';
 import 'features/areas/area_provisoria.dart';
+import 'features/auditoria/presentation/tela_auditoria.dart';
 import 'features/auth/domain/limitador_tentativas.dart';
 import 'features/auth/presentation/login_controller.dart';
 import 'features/auth/presentation/tela_boas_vindas.dart';
 import 'features/auth/presentation/tela_login.dart';
 import 'features/auth/presentation/tela_recuperar_senha.dart';
 import 'features/beneficios/presentation/tela_beneficios.dart';
+import 'features/membros/domain/membro.dart';
 import 'features/membros/presentation/tela_membros.dart';
 import 'features/painel_admin/tela_painel_admin.dart';
 import 'features/planos/presentation/tela_planos.dart';
@@ -49,6 +51,12 @@ class MembroPassApp extends StatelessWidget {
           Rotas.planos: (_) => const TelaPlanos(),
           Rotas.beneficios: (_) => const TelaBeneficios(),
           Rotas.membros: (_) => const TelaMembros(),
+          // RF07: os membros que pedem atenção do administrador.
+          Rotas.ciclos: (_) => const TelaMembros(
+                titulo: 'Ciclos e bloqueios',
+                filtroInicial: {SituacaoMembro.venceEmBreve, SituacaoMembro.vencido, SituacaoMembro.bloqueado},
+              ),
+          Rotas.auditoria: (_) => const TelaAuditoria(),
           Rotas.areaOperador: (_) => const AreaProvisoria(
                 titulo: 'Validar check-in',
                 descricao: 'Aqui ficará a leitura de QR Code do operador.',

@@ -219,7 +219,7 @@ Future<void> mostrarSenhaProvisoria(BuildContext context, MembroCriado criado) {
     barrierDismissible: false,
     builder: (context) => AlertDialog(
       icon: const Icon(Icons.verified_user_outlined, color: Cores.sucesso),
-      title: Text('${criado.membro.nome} foi cadastrado'),
+      title: Text('Cadastro de ${criado.membro.nome} criado'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,

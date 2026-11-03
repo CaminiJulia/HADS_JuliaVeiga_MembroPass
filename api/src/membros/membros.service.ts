@@ -5,6 +5,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
+import { DatabaseError } from 'pg';
+import type { UsuarioLogado } from '../auth/autenticacao.guard';
+import { listarAuditoria, registrarAuditoria } from '../auditoria/auditoria';
 import { BancoService, Consulta } from '../banco/banco.service';
 import { comUnico } from '../banco/erros';
 import { SalvarMembroDto } from './dto/membro.dto';
@@ -16,6 +19,7 @@ export interface Membro {
   telefone: string | null;
   planoId: string;
   planoNome: string;
+  planoDuracaoDias: number;
   dataAdesao: string;
   status: 'ATIVO' | 'DESATIVADO' | 'CANCELADO';
   carteirinha: {
@@ -32,6 +36,7 @@ interface LinhaMembro {
   telefone: string | null;
   plano_id: string;
   plano_nome: string;
+  plano_duracao_dias: number;
   data_adesao: string;
   status: Membro['status'];
   carteirinha_status: Membro['carteirinha']['status'];
@@ -41,7 +46,7 @@ interface LinhaMembro {
 
 const SQL_MEMBROS = `
   SELECT m.id, m.nome, m.email, m.telefone, m.plano_id, p.nome AS plano_nome,
-         m.data_adesao, m.status,
+         p.duracao_dias AS plano_duracao_dias, m.data_adesao, m.status,
          c.status AS carteirinha_status, c.data_vencimento, c.qr_versao
   FROM membro m
   JOIN plano_associacao p ON p.id = m.plano_id
@@ -134,29 +139,125 @@ export class MembrosService {
   }
 
   // Desativar invalida a carteirinha; reativar volta a deixá-la ativa.
+  // Fica registrado na auditoria (RF16).
   async alterarStatus(
-    organizacaoId: string,
+    usuario: UsuarioLogado,
     id: string,
     status: 'ATIVO' | 'DESATIVADO',
+    justificativa?: string | null,
   ) {
+    const membro = await this.buscar(usuario.organizacaoId, id);
+    if (membro.status === 'CANCELADO') {
+      throw new BadRequestException('Este membro teve a associação cancelada.');
+    }
+    if ((membro.status === 'ATIVO') === (status === 'ATIVO')) return membro;
+
     await this.banco.transacao(async (consultar) => {
-      const linhas = await consultar(
-        `UPDATE membro SET status = $3
-         WHERE organizacao_id = $1 AND id = $2 AND status <> 'CANCELADO'
-         RETURNING id`,
-        [organizacaoId, id, status],
-      );
-      if (linhas.length === 0) {
-        throw new NotFoundException('Membro não encontrado.');
-      }
+      await consultar('UPDATE membro SET status = $2 WHERE id = $1', [
+        id,
+        status,
+      ]);
       await consultar(
-        `UPDATE carteirinha
-         SET status = $2, qr_versao = qr_versao + 1
+        `UPDATE carteirinha SET status = $2, qr_versao = qr_versao + 1
          WHERE membro_id = $1`,
         [id, status === 'ATIVO' ? 'ATIVA' : 'INVALIDADA'],
       );
+      await registrarAuditoria(consultar, usuario, {
+        acao: status === 'ATIVO' ? 'REATIVACAO_MEMBRO' : 'DESATIVACAO_MEMBRO',
+        entidade: 'membro',
+        entidadeId: id,
+        descricao:
+          status === 'ATIVO'
+            ? `Cadastro de ${membro.nome} reativado.`
+            : `Cadastro de ${membro.nome} desativado; a carteirinha foi invalidada.`,
+        justificativa,
+      });
     });
-    return this.buscar(organizacaoId, id);
+    return this.buscar(usuario.organizacaoId, id);
+  }
+
+  // RF07: confirmação manual do pagamento, pela função liberar_ciclo do banco
+  // (calcula o vencimento, reativa a carteirinha e grava a auditoria).
+  async liberarCiclo(
+    usuario: UsuarioLogado,
+    id: string,
+    dataPagamento: string,
+  ) {
+    const membro = await this.buscar(usuario.organizacaoId, id);
+    if (membro.status !== 'ATIVO') {
+      throw new BadRequestException(
+        'Reative o membro antes de confirmar um pagamento.',
+      );
+    }
+    try {
+      await this.banco.consultar('SELECT liberar_ciclo($1, $2, $3)', [
+        id,
+        usuario.id,
+        dataPagamento,
+      ]);
+    } catch (erro) {
+      // As validações da função chegam como RAISE EXCEPTION (código P0001).
+      if (erro instanceof DatabaseError && erro.code === 'P0001') {
+        throw new BadRequestException(erro.message);
+      }
+      throw erro;
+    }
+    return this.buscar(usuario.organizacaoId, id);
+  }
+
+  // RF07: bloqueio manual. O sistema nunca bloqueia sozinho; a justificativa
+  // é obrigatória e fica na auditoria. A nova versão invalida o QR antigo.
+  bloquear(usuario: UsuarioLogado, id: string, justificativa: string) {
+    return this.alterarBloqueio(usuario, id, true, justificativa);
+  }
+
+  desbloquear(
+    usuario: UsuarioLogado,
+    id: string,
+    justificativa?: string | null,
+  ) {
+    return this.alterarBloqueio(usuario, id, false, justificativa);
+  }
+
+  historico(organizacaoId: string, id: string) {
+    return listarAuditoria(this.banco.consultar, organizacaoId, id);
+  }
+
+  private async alterarBloqueio(
+    usuario: UsuarioLogado,
+    id: string,
+    bloquear: boolean,
+    justificativa?: string | null,
+  ) {
+    const membro = await this.buscar(usuario.organizacaoId, id);
+    if (membro.status !== 'ATIVO') {
+      throw new BadRequestException('Este membro está desativado.');
+    }
+    if ((membro.carteirinha.status === 'BLOQUEADA') === bloquear) {
+      throw new BadRequestException(
+        bloquear
+          ? 'A carteirinha já está bloqueada.'
+          : 'A carteirinha não está bloqueada.',
+      );
+    }
+
+    await this.banco.transacao(async (consultar) => {
+      await consultar(
+        `UPDATE carteirinha SET status = $2, qr_versao = qr_versao + 1
+         WHERE membro_id = $1`,
+        [id, bloquear ? 'BLOQUEADA' : 'ATIVA'],
+      );
+      await registrarAuditoria(consultar, usuario, {
+        acao: bloquear ? 'BLOQUEIO_MANUAL' : 'DESBLOQUEIO',
+        entidade: 'membro',
+        entidadeId: id,
+        descricao: bloquear
+          ? `Carteirinha de ${membro.nome} bloqueada.`
+          : `Carteirinha de ${membro.nome} desbloqueada.`,
+        justificativa,
+      });
+    });
+    return this.buscar(usuario.organizacaoId, id);
   }
 }
 
@@ -192,6 +293,7 @@ function paraMembro(linha: LinhaMembro): Membro {
     telefone: linha.telefone,
     planoId: linha.plano_id,
     planoNome: linha.plano_nome,
+    planoDuracaoDias: linha.plano_duracao_dias,
     dataAdesao: linha.data_adesao,
     status: linha.status,
     carteirinha: {

@@ -1,4 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import type { UsuarioLogado } from '../auth/autenticacao.guard';
+import { registrarAuditoria } from '../auditoria/auditoria';
 import { BancoService } from '../banco/banco.service';
 import { comUnico } from '../banco/erros';
 import { SalvarPlanoDto } from './dto/plano.dto';
@@ -54,23 +56,43 @@ export class PlanosService {
     organizacaoId: string,
     id: string,
     dados: SalvarPlanoDto,
+    usuario: UsuarioLogado,
   ): Promise<Plano> {
-    const [linha] = await comUnico(NOME_REPETIDO, () =>
-      this.banco.consultar<LinhaPlano>(
-        `UPDATE plano_associacao
-         SET nome = $3, valor_referencia = $4, duracao_dias = $5
-         WHERE organizacao_id = $1 AND id = $2
-         RETURNING ${COLUNAS}`,
-        [
-          organizacaoId,
-          id,
-          dados.nome,
-          dados.valorReferencia,
-          dados.duracaoDias,
-        ],
-      ),
+    const [linhaAntes] = await this.banco.consultar<LinhaPlano>(
+      `SELECT ${COLUNAS} FROM plano_associacao WHERE organizacao_id = $1 AND id = $2`,
+      [organizacaoId, id],
     );
-    if (!linha) throw new NotFoundException('Plano não encontrado.');
+    if (!linhaAntes) throw new NotFoundException('Plano não encontrado.');
+    const antes = paraPlano(linhaAntes);
+
+    // RF16: a edição de plano entra na auditoria, junto com a alteração.
+    const [linha] = await comUnico(NOME_REPETIDO, () =>
+      this.banco.transacao(async (consultar) => {
+        const linhas = await consultar<LinhaPlano>(
+          `UPDATE plano_associacao
+           SET nome = $3, valor_referencia = $4, duracao_dias = $5
+           WHERE organizacao_id = $1 AND id = $2
+           RETURNING ${COLUNAS}`,
+          [
+            organizacaoId,
+            id,
+            dados.nome,
+            dados.valorReferencia,
+            dados.duracaoDias,
+          ],
+        );
+        const mudancas = descreverMudancas(antes, paraPlano(linhas[0]));
+        if (mudancas) {
+          await registrarAuditoria(consultar, usuario, {
+            acao: 'EDICAO_PLANO',
+            entidade: 'plano',
+            entidadeId: id,
+            descricao: `Plano ${antes.nome} editado: ${mudancas}.`,
+          });
+        }
+        return linhas;
+      }),
+    );
     return paraPlano(linha);
   }
 
@@ -100,4 +122,22 @@ function paraPlano(linha: LinhaPlano): Plano {
     duracaoDias: linha.duracao_dias,
     status: linha.status,
   };
+}
+
+// "valor R$ 89,90 → R$ 99,90; duração 30 → 31 dias", ou '' se nada mudou.
+function descreverMudancas(antes: Plano, depois: Plano) {
+  const reais = (v: number) => `R$ ${v.toFixed(2).replace('.', ',')}`;
+  const mudancas: string[] = [];
+  if (antes.nome !== depois.nome) {
+    mudancas.push(`nome ${antes.nome} → ${depois.nome}`);
+  }
+  if (antes.valorReferencia !== depois.valorReferencia) {
+    mudancas.push(
+      `valor ${reais(antes.valorReferencia)} → ${reais(depois.valorReferencia)}`,
+    );
+  }
+  if (antes.duracaoDias !== depois.duracaoDias) {
+    mudancas.push(`duração ${antes.duracaoDias} → ${depois.duracaoDias} dias`);
+  }
+  return mudancas.join('; ');
 }
