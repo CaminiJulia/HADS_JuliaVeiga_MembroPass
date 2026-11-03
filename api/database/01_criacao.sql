@@ -12,11 +12,16 @@ CREATE TYPE acao_auditoria AS ENUM (
     'DESATIVACAO_MEMBRO', 'REATIVACAO_MEMBRO', 'EDICAO_PLANO'
 );
 
+-- RF03 e RF17: a organização e a identidade visual aplicada a todas as carteirinhas.
 CREATE TABLE organizacao (
-    id      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    nome    VARCHAR(150) NOT NULL,
-    cnpj    CHAR(14) NOT NULL UNIQUE,
-    status  status_organizacao NOT NULL DEFAULT 'EM_HABILITACAO'
+    id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nome           VARCHAR(150) NOT NULL,
+    cnpj           CHAR(14) NOT NULL UNIQUE,
+    status         status_organizacao NOT NULL DEFAULT 'EM_HABILITACAO',
+    cor_principal  CHAR(7) CHECK (cor_principal ~ '^#[0-9A-F]{6}$'),
+    logo           BYTEA CHECK (octet_length(logo) <= 524288),
+    logo_tipo      VARCHAR(20) CHECK (logo_tipo IN ('image/png', 'image/jpeg')),
+    CHECK ((logo IS NULL) = (logo_tipo IS NULL))
 );
 
 CREATE TABLE administrador (

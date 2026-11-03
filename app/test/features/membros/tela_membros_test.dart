@@ -76,7 +76,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('membro@membropass.dev'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Desativar membro'), 200, scrollable: find.byType(Scrollable).last);
+    await rolarAte(tester, find.text('Desativar membro'));
     await tester.tap(find.text('Desativar membro'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Desativar'));

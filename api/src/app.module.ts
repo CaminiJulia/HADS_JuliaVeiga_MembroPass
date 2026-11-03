@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { BancoModule } from './banco/banco.module';
 import { BeneficiosModule } from './beneficios/beneficios.module';
 import { MembrosModule } from './membros/membros.module';
+import { OrganizacaoController } from './organizacao/organizacao.controller';
 import { PlanosModule } from './planos/planos.module';
 import { SaudeController } from './saude.controller';
 import { UnidadesModule } from './unidades/unidades.module';
@@ -19,6 +20,6 @@ import { UnidadesModule } from './unidades/unidades.module';
     MembrosModule,
     UnidadesModule,
   ],
-  controllers: [SaudeController, AuditoriaController],
+  controllers: [SaudeController, AuditoriaController, OrganizacaoController],
 })
 export class AppModule {}

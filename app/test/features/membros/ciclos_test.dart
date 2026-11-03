@@ -12,11 +12,6 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Future<void> rolarAte(WidgetTester tester, Finder alvo) async {
-    await tester.scrollUntilVisible(alvo, 200, scrollable: find.byType(Scrollable).last);
-    await tester.pumpAndSettle();
-  }
-
   testWidgets('"Ciclos e bloqueios" mostra só quem precisa de atenção', (tester) async {
     await entrarComoAdmin(tester, secao: 'Ciclos e bloqueios');
 
@@ -82,7 +77,7 @@ void main() {
     await tester.pumpAndSettle();
     tester.state<NavigatorState>(find.byType(Navigator)).pop();
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Histórico de ações'), 200);
+    await rolarAte(tester, find.text('Histórico de ações'));
     await tester.tap(find.text('Histórico de ações'));
     await tester.pumpAndSettle();
 

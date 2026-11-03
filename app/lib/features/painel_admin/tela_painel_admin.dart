@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/rotas.dart';
+import '../../core/suporte.dart';
 import '../../core/tema/cores.dart';
+import '../../core/widgets/componentes.dart';
 import '../auth/domain/usuario.dart';
 import '../auth/presentation/sair.dart';
 
-/// Tela inicial do administrador da organização: atalhos para cada seção.
-/// As seções ainda não implementadas aparecem como "Em breve".
+/// Tela inicial do administrador da organização: atalhos para cada seção
+/// e o contato do suporte. Seção sem rota aparece como "Em breve".
 class TelaPainelAdmin extends StatelessWidget {
   const TelaPainelAdmin({super.key});
 
@@ -16,7 +19,7 @@ class TelaPainelAdmin extends StatelessWidget {
     _Secao('Ciclos e bloqueios', 'Vencidos e a vencer', Icons.event_repeat_outlined, Rotas.ciclos),
     _Secao('Benefícios', 'Descontos e parceiros', Icons.redeem_outlined, Rotas.beneficios),
     _Secao('Unidades e eventos', 'Onde a carteirinha vale', Icons.place_outlined, Rotas.unidades),
-    _Secao('Identidade visual', 'Logo e cor da carteirinha', Icons.palette_outlined),
+    _Secao('Identidade visual', 'Logo e cor da carteirinha', Icons.palette_outlined, Rotas.identidade),
     _Secao('Histórico de ações', 'Auditoria da organização', Icons.history, Rotas.auditoria),
   ];
 
@@ -39,7 +42,7 @@ class TelaPainelAdmin extends StatelessWidget {
             ),
           ),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
             sliver: SliverGrid.builder(
               gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                 maxCrossAxisExtent: 260,
@@ -51,6 +54,64 @@ class TelaPainelAdmin extends StatelessWidget {
               itemBuilder: (context, i) => _CartaoSecao(_secoes[i]),
             ),
           ),
+          const SliverPadding(
+            padding: EdgeInsets.fromLTRB(20, 12, 20, 32),
+            sliver: SliverToBoxAdapter(child: _CartaoSuporte()),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// RF18: contatos do suporte da plataforma.
+class _CartaoSuporte extends StatelessWidget {
+  const _CartaoSuporte();
+
+  @override
+  Widget build(BuildContext context) {
+    final texto = Theme.of(context).textTheme;
+
+    Widget contato(IconData icone, String valor, String rotulo) => Row(
+          children: [
+            Icon(icone, size: 20, color: Cores.primaria),
+            const SizedBox(width: 10),
+            Expanded(child: SelectableText(valor, style: texto.bodyMedium?.copyWith(color: Cores.tinta))),
+            IconButton(
+              tooltip: 'Copiar $rotulo',
+              icon: const Icon(Icons.copy, size: 18),
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: valor));
+                avisar(context, '${rotulo[0].toUpperCase()}${rotulo.substring(1)} copiado.');
+              },
+            ),
+          ],
+        );
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 16, 4, 8),
+      decoration: BoxDecoration(
+        color: Cores.lilas.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.support_agent, color: Cores.primaria),
+              const SizedBox(width: 10),
+              Text('Precisa de ajuda?', style: texto.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: Cores.tinta)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Fale com o suporte do MembroPass. ${Suporte.horario}.',
+            style: texto.bodySmall?.copyWith(color: Cores.textoSecundario),
+          ),
+          const SizedBox(height: 4),
+          contato(Icons.mail_outline, Suporte.email, 'e-mail'),
+          contato(Icons.chat_outlined, Suporte.whatsapp, 'WhatsApp'),
         ],
       ),
     );

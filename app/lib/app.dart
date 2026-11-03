@@ -12,6 +12,7 @@ import 'features/auth/presentation/tela_boas_vindas.dart';
 import 'features/auth/presentation/tela_login.dart';
 import 'features/auth/presentation/tela_recuperar_senha.dart';
 import 'features/beneficios/presentation/tela_beneficios.dart';
+import 'features/identidade/presentation/tela_identidade.dart';
 import 'features/membros/domain/membro.dart';
 import 'features/membros/presentation/tela_membros.dart';
 import 'features/painel_admin/tela_painel_admin.dart';
@@ -59,6 +60,7 @@ class MembroPassApp extends StatelessWidget {
               ),
           Rotas.auditoria: (_) => const TelaAuditoria(),
           Rotas.unidades: (_) => const TelaUnidades(),
+          Rotas.identidade: (_) => const TelaIdentidade(),
           Rotas.areaOperador: (_) => const AreaProvisoria(
                 titulo: 'Validar check-in',
                 descricao: 'Aqui ficará a leitura de QR Code do operador.',

@@ -10,6 +10,8 @@ import 'features/auth/domain/auth_repositorio.dart';
 import 'features/beneficios/data/beneficios_repositorio_api.dart';
 import 'features/beneficios/data/beneficios_repositorio_mock.dart';
 import 'features/beneficios/domain/beneficios_repositorio.dart';
+import 'features/identidade/data/organizacao_repositorio.dart';
+import 'features/identidade/domain/organizacao.dart';
 import 'features/membros/data/membros_repositorio_api.dart';
 import 'features/membros/data/membros_repositorio_mock.dart';
 import 'features/membros/domain/membros_repositorio.dart';
@@ -29,6 +31,7 @@ class Repositorios {
     required this.membros,
     required this.auditoria,
     required this.unidades,
+    required this.organizacao,
   });
 
   /// Implementações que falam com a API, compartilhando o mesmo token.
@@ -39,6 +42,7 @@ class Repositorios {
         membros: MembrosRepositorioApi(api),
         auditoria: AuditoriaRepositorioApi(api),
         unidades: UnidadesRepositorioApi(api),
+        organizacao: OrganizacaoRepositorioApi(api),
       );
 
   /// Implementações em memória, para os testes.
@@ -51,6 +55,7 @@ class Repositorios {
       membros: membros,
       auditoria: AuditoriaRepositorioMock(membros),
       unidades: UnidadesRepositorioMock(),
+      organizacao: OrganizacaoRepositorioMock(),
     );
   }
 
@@ -60,6 +65,7 @@ class Repositorios {
   final MembrosRepositorio membros;
   final AuditoriaRepositorio auditoria;
   final UnidadesRepositorio unidades;
+  final OrganizacaoRepositorio organizacao;
 
   List<SingleChildWidget> get providers => [
         Provider<AuthRepositorio>.value(value: auth),
@@ -68,5 +74,6 @@ class Repositorios {
         Provider<MembrosRepositorio>.value(value: membros),
         Provider<AuditoriaRepositorio>.value(value: auditoria),
         Provider<UnidadesRepositorio>.value(value: unidades),
+        Provider<OrganizacaoRepositorio>.value(value: organizacao),
       ];
 }

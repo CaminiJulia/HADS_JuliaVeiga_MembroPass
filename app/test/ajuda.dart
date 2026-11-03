@@ -19,7 +19,13 @@ Future<void> entrarComoAdmin(WidgetTester tester, {String? secao}) async {
 
   expect(find.text('Clube Exemplo'), findsOneWidget);
   if (secao == null) return;
-  await tester.scrollUntilVisible(find.text(secao), 200);
+  await rolarAte(tester, find.text(secao));
   await tester.tap(find.text(secao));
+  await tester.pumpAndSettle();
+}
+
+/// Rola a lista principal da tela (a primeira área rolável) até [alvo] aparecer.
+Future<void> rolarAte(WidgetTester tester, Finder alvo) async {
+  await tester.scrollUntilVisible(alvo, 200, scrollable: find.byType(Scrollable).first);
   await tester.pumpAndSettle();
 }
