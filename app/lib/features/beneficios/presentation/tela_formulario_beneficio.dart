@@ -97,9 +97,7 @@ class _TelaFormularioBeneficioState extends State<TelaFormularioBeneficio> {
     );
     final repositorio = context.read<BeneficiosRepositorio>();
     try {
-      final salvo = _editando
-          ? await repositorio.editar(widget.beneficio!.id, dados)
-          : await repositorio.criar(dados);
+      final salvo = _editando ? await repositorio.editar(widget.beneficio!.id, dados) : await repositorio.criar(dados);
       if (mounted) Navigator.of(context).pop(salvo);
     } catch (e) {
       if (!mounted) return;
@@ -129,10 +127,7 @@ class _TelaFormularioBeneficioState extends State<TelaFormularioBeneficio> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (_erro != null) ...[
-                      AvisoErro(mensagem: _erro!),
-                      const SizedBox(height: 16),
-                    ],
+                    if (_erro != null) ...[AvisoErro(mensagem: _erro!), const SizedBox(height: 16)],
                     TextFormField(
                       key: const Key('campo-nome-beneficio'),
                       controller: _nome,

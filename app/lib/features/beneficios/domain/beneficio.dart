@@ -18,16 +18,16 @@ class Beneficio {
   });
 
   factory Beneficio.deJson(Map<String, dynamic> json) => Beneficio(
-        id: json['id'] as String,
-        nome: json['nome'] as String,
-        descricao: json['descricao'] as String?,
-        parceiro: json['parceiro'] as String?,
-        tipoDesconto: json['tipoDesconto'] == 'PERCENTUAL' ? TipoDesconto.percentual : TipoDesconto.valor,
-        valorDesconto: (json['valorDesconto'] as num).toDouble(),
-        vigInicio: Datas.daApi(json['vigInicio'] as String?),
-        vigFim: Datas.daApi(json['vigFim'] as String?),
-        planoIds: [for (final id in json['planoIds'] as List) id as String],
-      );
+    id: json['id'] as String,
+    nome: json['nome'] as String,
+    descricao: json['descricao'] as String?,
+    parceiro: json['parceiro'] as String?,
+    tipoDesconto: json['tipoDesconto'] == 'PERCENTUAL' ? TipoDesconto.percentual : TipoDesconto.valor,
+    valorDesconto: (json['valorDesconto'] as num).toDouble(),
+    vigInicio: Datas.daApi(json['vigInicio'] as String?),
+    vigFim: Datas.daApi(json['vigFim'] as String?),
+    planoIds: [for (final id in json['planoIds'] as List) id as String],
+  );
 
   final String id;
   final String nome;
@@ -42,10 +42,12 @@ class Beneficio {
 
   final List<String> planoIds;
 
-  /// "15% de desconto" ou "R$ 50,00 de desconto"
-  String get descricaoDesconto => tipoDesconto == TipoDesconto.percentual
-      ? '${_semZeros(valorDesconto)}% de desconto'
-      : '${Moeda.formatar(valorDesconto)} de desconto';
+  /// Valor curto para o selo do cupom: "15%", "12,5%", "R\$ 50" ou "R\$ 12,50".
+  String get valorCurto {
+    if (tipoDesconto == TipoDesconto.percentual) return '${_semZeros(valorDesconto)}%';
+    final inteiro = valorDesconto == valorDesconto.roundToDouble();
+    return inteiro ? 'R\$ ${valorDesconto.toStringAsFixed(0)}' : Moeda.formatar(valorDesconto);
+  }
 
   /// Situação da vigência em relação a [hoje].
   SituacaoVigencia situacao(DateTime hoje) {
@@ -64,8 +66,9 @@ class Beneficio {
     return 'Sem prazo de validade';
   }
 
-  static String _semZeros(double v) =>
-      v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(2).replaceAll('.', ',');
+  static String _semZeros(double v) => v == v.roundToDouble()
+      ? v.toStringAsFixed(0)
+      : v.toStringAsFixed(2).replaceAll(RegExp(r'0$'), '').replaceAll('.', ',');
 }
 
 enum SituacaoVigencia { vigente, futuro, encerrado }
@@ -93,13 +96,13 @@ class DadosBeneficio {
   final List<String> planoIds;
 
   Map<String, Object?> paraJson() => {
-        'nome': nome,
-        'descricao': descricao,
-        'parceiro': parceiro,
-        'tipoDesconto': tipoDesconto == TipoDesconto.percentual ? 'PERCENTUAL' : 'VALOR',
-        'valorDesconto': valorDesconto,
-        'vigInicio': vigInicio == null ? null : Datas.paraApi(vigInicio!),
-        'vigFim': vigFim == null ? null : Datas.paraApi(vigFim!),
-        'planoIds': planoIds,
-      };
+    'nome': nome,
+    'descricao': descricao,
+    'parceiro': parceiro,
+    'tipoDesconto': tipoDesconto == TipoDesconto.percentual ? 'PERCENTUAL' : 'VALOR',
+    'valorDesconto': valorDesconto,
+    'vigInicio': vigInicio == null ? null : Datas.paraApi(vigInicio!),
+    'vigFim': vigFim == null ? null : Datas.paraApi(vigFim!),
+    'planoIds': planoIds,
+  };
 }

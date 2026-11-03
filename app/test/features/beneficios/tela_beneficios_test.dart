@@ -11,9 +11,14 @@ void main() {
     await abrirBeneficios(tester);
 
     expect(find.text('Desconto na farmácia'), findsOneWidget);
-    expect(find.text('15% de desconto · Farmácia Central'), findsOneWidget);
+    expect(find.text('1 benefício · 1 vigente'), findsOneWidget);
+    expect(find.text('15%'), findsOneWidget);
+    expect(find.text('Vigente'), findsOneWidget);
+    expect(find.text('Farmácia Central'), findsOneWidget);
     expect(find.text('Sem prazo de validade'), findsOneWidget);
-    expect(find.text('Planos: Mensal, Anual'), findsOneWidget);
+    // Etiquetas dos planos com direito.
+    expect(find.text('Mensal'), findsOneWidget);
+    expect(find.text('Anual'), findsOneWidget);
   });
 
   testWidgets('cria benefício em valor ligado a um plano', (tester) async {
@@ -31,8 +36,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Cinema'), findsOneWidget);
-    expect(find.text('R\$ 20,00 de desconto'), findsOneWidget);
-    expect(find.text('Planos: Anual'), findsOneWidget);
+    expect(find.text('R\$ 20'), findsOneWidget);
+    expect(find.text('2 benefícios · 2 vigentes'), findsOneWidget);
   });
 
   testWidgets('não aceita percentual acima de 100%', (tester) async {
@@ -83,7 +88,11 @@ void main() {
 
     test('descrições', () {
       final b = comVigencia(DateTime(2026, 1, 1), DateTime(2026, 12, 31));
-      expect(b.descricaoDesconto, '12,50% de desconto');
+      expect(b.valorCurto, '12,5%');
+      expect(
+        Beneficio(id: 'v', nome: 'V', tipoDesconto: TipoDesconto.valor, valorDesconto: 12.5, planoIds: const []).valorCurto,
+        'R\$ 12,50',
+      );
       expect(b.descricaoVigencia, 'Válido de 01/01/2026 a 31/12/2026');
       expect(comVigencia(null, DateTime(2026, 12, 31)).descricaoVigencia, 'Válido até 31/12/2026');
     });

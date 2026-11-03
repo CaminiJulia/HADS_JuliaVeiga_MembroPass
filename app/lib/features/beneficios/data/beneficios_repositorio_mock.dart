@@ -43,14 +43,14 @@ class BeneficiosRepositorioMock implements BeneficiosRepositorio {
   }
 
   static Beneficio _deDados(String id, DadosBeneficio d) => Beneficio(
-        id: id,
-        nome: d.nome,
-        descricao: d.descricao,
-        parceiro: d.parceiro,
-        tipoDesconto: d.tipoDesconto,
-        valorDesconto: d.valorDesconto,
-        vigInicio: d.vigInicio,
-        vigFim: d.vigFim,
-        planoIds: d.planoIds,
-      );
+    id: id,
+    nome: d.nome,
+    descricao: d.descricao,
+    parceiro: d.parceiro,
+    tipoDesconto: d.tipoDesconto,
+    valorDesconto: d.valorDesconto,
+    vigInicio: d.vigInicio,
+    vigFim: d.vigFim,
+    planoIds: d.planoIds,
+  );
 }
