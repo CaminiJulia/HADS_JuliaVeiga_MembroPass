@@ -41,6 +41,9 @@ class LoginController extends ChangeNotifier {
           ? 'E-mail ou senha incorretos.'
           : _mensagemBloqueio(novoBloqueio);
       return null;
+    } on TentativasEsgotadasException catch (e) {
+      _erro = e.mensagem;
+      return null;
     } catch (_) {
       _erro = 'Não foi possível entrar agora. Verifique sua conexão e tente novamente.';
       return null;

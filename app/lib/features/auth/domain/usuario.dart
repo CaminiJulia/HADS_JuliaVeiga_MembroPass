@@ -7,6 +7,7 @@ class Usuario {
     required this.email,
     required this.papel,
     required this.organizacaoId,
+    required this.organizacaoNome,
   });
 
   final String id;
@@ -14,4 +15,5 @@ class Usuario {
   final String email;
   final Papel papel;
   final String organizacaoId;
+  final String organizacaoNome;
 }

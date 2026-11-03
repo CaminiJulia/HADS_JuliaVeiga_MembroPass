@@ -19,6 +19,7 @@ class AuthRepositorioMock implements AuthRepositorio {
       email: 'admin@membropass.dev',
       papel: Papel.administrador,
       organizacaoId: 'org-1',
+      organizacaoNome: 'Clube Exemplo',
     ),
     Usuario(
       id: 'op-1',
@@ -26,6 +27,7 @@ class AuthRepositorioMock implements AuthRepositorio {
       email: 'operador@membropass.dev',
       papel: Papel.operador,
       organizacaoId: 'org-1',
+      organizacaoNome: 'Clube Exemplo',
     ),
     Usuario(
       id: 'mem-1',
@@ -33,6 +35,7 @@ class AuthRepositorioMock implements AuthRepositorio {
       email: 'membro@membropass.dev',
       papel: Papel.membro,
       organizacaoId: 'org-1',
+      organizacaoNome: 'Clube Exemplo',
     ),
   ];
 
@@ -50,4 +53,7 @@ class AuthRepositorioMock implements AuthRepositorio {
   Future<void> solicitarRecuperacaoSenha(String email) async {
     await Future<void>.delayed(latencia);
   }
+
+  @override
+  void sair() {}
 }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../core/rotas.dart';
 import '../../core/tema/cores.dart';
 import '../auth/domain/usuario.dart';
+import '../auth/presentation/sair.dart';
 
 /// Tela de destino provisória de cada papel, até a área real ser implementada.
 class AreaProvisoria extends StatelessWidget {
@@ -24,12 +24,13 @@ class AreaProvisoria extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Text(titulo),
         actions: [
           IconButton(
             tooltip: 'Sair',
             icon: const Icon(Icons.logout),
-            onPressed: () => Navigator.of(context).pushReplacementNamed(Rotas.login),
+            onPressed: () => sairDaConta(context),
           ),
         ],
       ),

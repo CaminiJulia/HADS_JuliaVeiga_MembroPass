@@ -5,6 +5,7 @@ import '../../../core/tema/cores.dart';
 import '../../../core/validacao/validadores.dart';
 import '../domain/auth_repositorio.dart';
 import 'widgets/aviso_erro.dart';
+import 'widgets/visual_entrada.dart';
 
 /// HU03 — Recuperar senha.
 class TelaRecuperarSenha extends StatefulWidget {
@@ -47,20 +48,22 @@ class _TelaRecuperarSenhaState extends State<TelaRecuperarSenha> {
 
   @override
   Widget build(BuildContext context) {
-    final texto = Theme.of(context).textTheme;
-
-    return Scaffold(
-      appBar: AppBar(backgroundColor: Colors.transparent),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: _enviado ? _confirmacao(texto) : _formularioEnvio(texto),
+    return FundoEntrada(
+      comVoltar: true,
+      child: Builder(
+        // Builder para ler o tema escuro aplicado pelo FundoEntrada.
+        builder: (context) {
+          final texto = Theme.of(context).textTheme;
+          return Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(28, 56, 28, 24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: _enviado ? _confirmacao(texto) : _formularioEnvio(texto),
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -73,12 +76,12 @@ class _TelaRecuperarSenhaState extends State<TelaRecuperarSenha> {
         children: [
           Text(
             'Recuperar senha',
-            style: texto.headlineSmall?.copyWith(fontWeight: FontWeight.w700, color: Cores.tinta),
+            style: texto.headlineSmall?.copyWith(fontWeight: FontWeight.w800, color: Colors.white),
           ),
           const SizedBox(height: 8),
           Text(
             'Informe o e-mail do seu cadastro. Enviaremos um link para você criar uma nova senha.',
-            style: texto.bodyMedium?.copyWith(color: Cores.textoSecundario),
+            style: texto.bodyMedium?.copyWith(color: Colors.white70),
           ),
           const SizedBox(height: 24),
           if (_erro != null) ...[
@@ -104,7 +107,7 @@ class _TelaRecuperarSenhaState extends State<TelaRecuperarSenha> {
             child: _enviando
                 ? const SizedBox.square(
                     dimension: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                    child: CircularProgressIndicator(strokeWidth: 2.5),
                   )
                 : const Text('Enviar link'),
           ),
@@ -117,12 +120,12 @@ class _TelaRecuperarSenhaState extends State<TelaRecuperarSenha> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Icon(Icons.mark_email_read_outlined, size: 56, color: Cores.primaria),
+        const Icon(Icons.mark_email_read_outlined, size: 56, color: Cores.lilas),
         const SizedBox(height: 16),
         Text(
           'Verifique seu e-mail',
           textAlign: TextAlign.center,
-          style: texto.headlineSmall?.copyWith(fontWeight: FontWeight.w700, color: Cores.tinta),
+          style: texto.headlineSmall?.copyWith(fontWeight: FontWeight.w800, color: Colors.white),
         ),
         const SizedBox(height: 8),
         // Mesma mensagem exista ou não o cadastro, para não revelar quais e-mails estão na base.
@@ -130,7 +133,7 @@ class _TelaRecuperarSenhaState extends State<TelaRecuperarSenha> {
           'Se ${_email.text.trim()} estiver cadastrado, você receberá em instantes um link '
           'temporário para redefinir sua senha.',
           textAlign: TextAlign.center,
-          style: texto.bodyMedium?.copyWith(color: Cores.textoSecundario),
+          style: texto.bodyMedium?.copyWith(color: Colors.white70),
         ),
         const SizedBox(height: 24),
         FilledButton(
