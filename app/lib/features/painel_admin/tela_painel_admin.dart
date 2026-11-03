@@ -15,7 +15,7 @@ class TelaPainelAdmin extends StatelessWidget {
     _Secao('Membros', 'Cadastro e carteirinhas', Icons.people_outline, Rotas.membros),
     _Secao('Ciclos e bloqueios', 'Vencidos e a vencer', Icons.event_repeat_outlined, Rotas.ciclos),
     _Secao('Benefícios', 'Descontos e parceiros', Icons.redeem_outlined, Rotas.beneficios),
-    _Secao('Unidades e eventos', 'Onde a carteirinha vale', Icons.place_outlined),
+    _Secao('Unidades e eventos', 'Onde a carteirinha vale', Icons.place_outlined, Rotas.unidades),
     _Secao('Identidade visual', 'Logo e cor da carteirinha', Icons.palette_outlined),
     _Secao('Histórico de ações', 'Auditoria da organização', Icons.history, Rotas.auditoria),
   ];

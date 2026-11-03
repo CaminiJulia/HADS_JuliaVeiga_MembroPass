@@ -6,6 +6,7 @@ CREATE TYPE status_cadastro AS ENUM ('ATIVO', 'INATIVO');
 CREATE TYPE status_membro AS ENUM ('ATIVO', 'DESATIVADO', 'CANCELADO');
 CREATE TYPE tipo_desconto AS ENUM ('PERCENTUAL', 'VALOR');
 CREATE TYPE status_carteirinha AS ENUM ('ATIVA', 'BLOQUEADA', 'INVALIDADA');
+CREATE TYPE tipo_unidade_evento AS ENUM ('UNIDADE', 'EVENTO');
 CREATE TYPE acao_auditoria AS ENUM (
     'LIBERACAO_CICLO', 'BLOQUEIO_MANUAL', 'DESBLOQUEIO',
     'DESATIVACAO_MEMBRO', 'REATIVACAO_MEMBRO', 'EDICAO_PLANO'
@@ -123,6 +124,29 @@ CREATE TABLE plano_beneficio (
     plano_id      UUID NOT NULL REFERENCES plano_associacao (id) ON DELETE CASCADE,
     beneficio_id  UUID NOT NULL REFERENCES beneficio (id) ON DELETE CASCADE,
     PRIMARY KEY (plano_id, beneficio_id)
+);
+
+-- RF11: locais fixos (unidades) e eventos com período, onde a carteirinha é aceita.
+CREATE TABLE unidade_evento (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organizacao_id  UUID NOT NULL REFERENCES organizacao (id),
+    nome            VARCHAR(150) NOT NULL,
+    tipo            tipo_unidade_evento NOT NULL,
+    localizacao     VARCHAR(255),
+    data_inicio     DATE,
+    data_fim        DATE,
+    -- Evento tem período; unidade não.
+    CHECK (
+        (tipo = 'EVENTO' AND data_inicio IS NOT NULL AND data_fim IS NOT NULL AND data_fim >= data_inicio)
+        OR (tipo = 'UNIDADE' AND data_inicio IS NULL AND data_fim IS NULL)
+    )
+);
+
+-- Quais planos são aceitos em cada unidade ou evento (N:M).
+CREATE TABLE unidade_evento_plano (
+    unidade_evento_id  UUID NOT NULL REFERENCES unidade_evento (id) ON DELETE CASCADE,
+    plano_id           UUID NOT NULL REFERENCES plano_associacao (id) ON DELETE CASCADE,
+    PRIMARY KEY (unidade_evento_id, plano_id)
 );
 
 -- E-mail único dentro de cada cadastro, sem diferenciar maiúsculas.

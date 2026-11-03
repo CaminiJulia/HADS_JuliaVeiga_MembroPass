@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../api/cliente_api.dart';
+import '../formatacao/datas.dart';
 import '../tema/cores.dart';
 
 /// Mensagem centralizada para lista vazia ou erro de carregamento.
@@ -129,4 +130,32 @@ Future<bool> confirmar(
     ),
   );
   return confirmou ?? false;
+}
+
+/// Campo de data que abre o calendário ao tocar, com botão para limpar.
+class CampoData extends StatelessWidget {
+  const CampoData({super.key, required this.rotulo, required this.data, this.aoEscolher, this.aoLimpar});
+
+  final String rotulo;
+  final DateTime? data;
+  final VoidCallback? aoEscolher;
+  final VoidCallback? aoLimpar;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: aoEscolher,
+      borderRadius: BorderRadius.circular(12),
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: rotulo,
+          prefixIcon: const Icon(Icons.event_outlined),
+          suffixIcon: data == null
+              ? null
+              : IconButton(tooltip: 'Limpar $rotulo', icon: const Icon(Icons.close), onPressed: aoLimpar),
+        ),
+        child: Text(data == null ? '—' : Datas.formatar(data!)),
+      ),
+    );
+  }
 }

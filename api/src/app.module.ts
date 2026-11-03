@@ -7,6 +7,7 @@ import { BeneficiosModule } from './beneficios/beneficios.module';
 import { MembrosModule } from './membros/membros.module';
 import { PlanosModule } from './planos/planos.module';
 import { SaudeController } from './saude.controller';
+import { UnidadesModule } from './unidades/unidades.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { SaudeController } from './saude.controller';
     PlanosModule,
     BeneficiosModule,
     MembrosModule,
+    UnidadesModule,
   ],
   controllers: [SaudeController, AuditoriaController],
 })

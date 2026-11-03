@@ -3,7 +3,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { BancoService, Consulta } from '../banco/banco.service';
+import { BancoService } from '../banco/banco.service';
+import { vincularPlanos } from '../planos/vincular-planos';
 import { SalvarBeneficioDto } from './dto/beneficio.dto';
 
 export interface Beneficio {
@@ -62,7 +63,13 @@ export class BeneficiosService {
          RETURNING id`,
         [organizacaoId, ...colunas(dados)],
       );
-      await vincularPlanos(consultar, organizacaoId, id, dados.planoIds);
+      await vincularPlanos(
+        consultar,
+        'beneficio',
+        organizacaoId,
+        id,
+        dados.planoIds,
+      );
       return id;
     });
     return this.buscar(organizacaoId, id);
@@ -82,10 +89,13 @@ export class BeneficiosService {
       if (linhas.length === 0) {
         throw new NotFoundException('Benefício não encontrado.');
       }
-      await consultar('DELETE FROM plano_beneficio WHERE beneficio_id = $1', [
+      await vincularPlanos(
+        consultar,
+        'beneficio',
+        organizacaoId,
         id,
-      ]);
-      await vincularPlanos(consultar, organizacaoId, id, dados.planoIds);
+        dados.planoIds,
+      );
     });
     return this.buscar(organizacaoId, id);
   }
@@ -129,27 +139,6 @@ function validarDesconto(dados: SalvarBeneficioDto) {
     throw new BadRequestException(
       'O fim da vigência não pode ser antes do início.',
     );
-  }
-}
-
-// Só vincula planos da mesma organização; um id de fora é recusado.
-async function vincularPlanos(
-  consultar: Consulta,
-  organizacaoId: string,
-  beneficioId: string,
-  planoIds: string[],
-) {
-  const unicos = [...new Set(planoIds)];
-  if (unicos.length === 0) return;
-  const inseridos = await consultar(
-    `INSERT INTO plano_beneficio (plano_id, beneficio_id)
-     SELECT id, $2 FROM plano_associacao
-     WHERE organizacao_id = $1 AND id = ANY($3::uuid[])
-     RETURNING plano_id`,
-    [organizacaoId, beneficioId, unicos],
-  );
-  if (inseridos.length !== unicos.length) {
-    throw new BadRequestException('Algum plano escolhido não existe.');
   }
 }
 

@@ -8,6 +8,7 @@ import '../../../core/tema/cores.dart';
 import '../../../core/widgets/componentes.dart';
 import '../../auth/presentation/widgets/aviso_erro.dart';
 import '../../planos/domain/plano.dart';
+import '../../planos/presentation/seletor_planos.dart';
 import '../domain/beneficio.dart';
 import '../domain/beneficios_repositorio.dart';
 
@@ -41,10 +42,6 @@ class _TelaFormularioBeneficioState extends State<TelaFormularioBeneficio> {
   String? _erro;
 
   bool get _editando => widget.beneficio != null;
-
-  /// Planos que podem ser escolhidos: os ativos e os já vinculados (mesmo se inativos).
-  List<Plano> get _planosVisiveis =>
-      [for (final p in widget.planos) if (p.ativo || _planoIds.contains(p.id)) p];
 
   @override
   void dispose() {
@@ -206,7 +203,7 @@ class _TelaFormularioBeneficioState extends State<TelaFormularioBeneficio> {
                     Row(
                       children: [
                         Expanded(
-                          child: _CampoData(
+                          child: CampoData(
                             rotulo: 'Início',
                             data: _inicio,
                             aoEscolher: _salvando ? null : () => _escolherData(inicio: true),
@@ -215,7 +212,7 @@ class _TelaFormularioBeneficioState extends State<TelaFormularioBeneficio> {
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: _CampoData(
+                          child: CampoData(
                             rotulo: 'Fim',
                             data: _fim,
                             aoEscolher: _salvando ? null : () => _escolherData(inicio: false),
@@ -227,28 +224,12 @@ class _TelaFormularioBeneficioState extends State<TelaFormularioBeneficio> {
                     const SizedBox(height: 20),
                     Text('Planos com direito', style: titulo),
                     const SizedBox(height: 8),
-                    if (_planosVisiveis.isEmpty)
-                      Text(
-                        'Cadastre um plano primeiro para vincular este benefício.',
-                        style: texto.bodySmall?.copyWith(color: Cores.textoSecundario),
-                      )
-                    else
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final plano in _planosVisiveis)
-                            FilterChip(
-                              label: Text(plano.nome),
-                              selected: _planoIds.contains(plano.id),
-                              onSelected: _salvando
-                                  ? null
-                                  : (marcado) => setState(
-                                        () => marcado ? _planoIds.add(plano.id) : _planoIds.remove(plano.id),
-                                      ),
-                            ),
-                        ],
-                      ),
+                    SeletorPlanos(
+                      planos: widget.planos,
+                      selecionados: _planoIds,
+                      habilitado: !_salvando,
+                      aoAlterar: (id, marcado) => setState(() => marcado ? _planoIds.add(id) : _planoIds.remove(id)),
+                    ),
                     const SizedBox(height: 28),
                     FilledButton(
                       key: const Key('botao-salvar-beneficio'),
@@ -263,33 +244,6 @@ class _TelaFormularioBeneficioState extends State<TelaFormularioBeneficio> {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _CampoData extends StatelessWidget {
-  const _CampoData({required this.rotulo, required this.data, this.aoEscolher, this.aoLimpar});
-
-  final String rotulo;
-  final DateTime? data;
-  final VoidCallback? aoEscolher;
-  final VoidCallback? aoLimpar;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: aoEscolher,
-      borderRadius: BorderRadius.circular(12),
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: rotulo,
-          prefixIcon: const Icon(Icons.event_outlined),
-          suffixIcon: data == null
-              ? null
-              : IconButton(tooltip: 'Limpar $rotulo', icon: const Icon(Icons.close), onPressed: aoLimpar),
-        ),
-        child: Text(data == null ? '—' : Datas.formatar(data!)),
       ),
     );
   }

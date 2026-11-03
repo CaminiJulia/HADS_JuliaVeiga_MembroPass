@@ -41,3 +41,15 @@ FROM (VALUES
     ('Diego Lima', 'diego@exemplo.com', NULL, 'Anual', 40)
 ) AS m (nome, email, telefone, plano, dias_atras)
 JOIN plano_associacao p ON p.nome = m.plano;
+
+INSERT INTO unidade_evento (id, organizacao_id, nome, tipo, localizacao, data_inicio, data_fim) VALUES
+    ('00000000-0000-0000-0000-0000000000e1', '00000000-0000-0000-0000-000000000001',
+     'Sede Central', 'UNIDADE', 'Rua das Flores, 100 - Centro', NULL, NULL),
+    ('00000000-0000-0000-0000-0000000000e2', '00000000-0000-0000-0000-000000000001',
+     'Torneio de Verão', 'EVENTO', 'Ginásio Municipal', CURRENT_DATE + 20, CURRENT_DATE + 22);
+
+-- Sede: todos os planos. Torneio: só Trimestral e Anual.
+INSERT INTO unidade_evento_plano (unidade_evento_id, plano_id)
+SELECT '00000000-0000-0000-0000-0000000000e1'::uuid, p.id FROM plano_associacao p
+UNION ALL
+SELECT '00000000-0000-0000-0000-0000000000e2'::uuid, p.id FROM plano_associacao p WHERE p.nome IN ('Trimestral', 'Anual');

@@ -16,6 +16,9 @@ import 'features/membros/domain/membros_repositorio.dart';
 import 'features/planos/data/planos_repositorio_api.dart';
 import 'features/planos/data/planos_repositorio_mock.dart';
 import 'features/planos/domain/planos_repositorio.dart';
+import 'features/unidades/data/unidades_repositorio_api.dart';
+import 'features/unidades/data/unidades_repositorio_mock.dart';
+import 'features/unidades/domain/unidade_evento.dart';
 
 /// Todos os repositórios do app, para trocar a API pelos simulados nos testes.
 class Repositorios {
@@ -25,6 +28,7 @@ class Repositorios {
     required this.beneficios,
     required this.membros,
     required this.auditoria,
+    required this.unidades,
   });
 
   /// Implementações que falam com a API, compartilhando o mesmo token.
@@ -34,6 +38,7 @@ class Repositorios {
         beneficios: BeneficiosRepositorioApi(api),
         membros: MembrosRepositorioApi(api),
         auditoria: AuditoriaRepositorioApi(api),
+        unidades: UnidadesRepositorioApi(api),
       );
 
   /// Implementações em memória, para os testes.
@@ -45,6 +50,7 @@ class Repositorios {
       beneficios: BeneficiosRepositorioMock(),
       membros: membros,
       auditoria: AuditoriaRepositorioMock(membros),
+      unidades: UnidadesRepositorioMock(),
     );
   }
 
@@ -53,6 +59,7 @@ class Repositorios {
   final BeneficiosRepositorio beneficios;
   final MembrosRepositorio membros;
   final AuditoriaRepositorio auditoria;
+  final UnidadesRepositorio unidades;
 
   List<SingleChildWidget> get providers => [
         Provider<AuthRepositorio>.value(value: auth),
@@ -60,5 +67,6 @@ class Repositorios {
         Provider<BeneficiosRepositorio>.value(value: beneficios),
         Provider<MembrosRepositorio>.value(value: membros),
         Provider<AuditoriaRepositorio>.value(value: auditoria),
+        Provider<UnidadesRepositorio>.value(value: unidades),
       ];
 }
