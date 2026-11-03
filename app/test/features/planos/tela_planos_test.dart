@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:membropass/core/tema/contraste.dart';
+import 'package:membropass/features/planos/presentation/cor_plano.dart';
+
 import '../../ajuda.dart';
 
 void main() {
@@ -81,6 +84,37 @@ void main() {
     final cartao = find.ancestor(of: find.text('Família'), matching: find.byType(Row)).first;
     final icone = tester.widget<Icon>(find.descendant(of: cartao, matching: find.byIcon(Icons.workspace_premium_outlined)));
     expect(icone.color, const Color(0xFF2BB5A0));
+  });
+
+  testWidgets('bolinha de arco-íris abre a roda de cores', (tester) async {
+    await abrirPlanos(tester);
+    await tester.tap(find.text('Novo plano'));
+    await tester.pumpAndSettle();
+
+    await rolarAte(tester, find.bySemanticsLabel('Cor personalizada'));
+    await tester.tap(find.bySemanticsLabel('Cor personalizada'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Cor personalizada'), findsWidgets);
+    expect(find.byKey(const Key('botao-usar-cor')), findsOneWidget);
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('botao-usar-cor')), findsNothing);
+  });
+
+  group('cores de plano', () {
+    test('cores escuras demais para o fundo são recusadas; as sugeridas passam', () {
+      expect(corEscuraDemais(const Color(0xFF101030)), isTrue);
+      for (final hex in paletaPlanos) {
+        expect(corEscuraDemais(corDoPlano(hex)), isFalse, reason: hex);
+      }
+    });
+
+    test('a prévia escurece cores claras até o texto branco ficar legível', () {
+      for (final hex in ['#FFFF00', '#FFFFFF', '#A0FFA0', ...paletaPlanos]) {
+        expect(Contraste.legivelComBranco(degradeDoPlano(hex).first), isTrue, reason: hex);
+      }
+    });
   });
 
   testWidgets('valida o formulário e mostra nome repetido', (tester) async {

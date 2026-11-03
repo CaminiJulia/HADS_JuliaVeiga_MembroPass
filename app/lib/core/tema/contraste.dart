@@ -12,6 +12,21 @@ abstract final class Contraste {
 
   static bool legivelComBranco(Color cor) => comBranco(cor) >= minimo;
 
+  /// Contraste entre duas cores quaisquer, de 1 a 21.
+  static double entre(Color a, Color b) {
+    final (la, lb) = (_luminancia(a), _luminancia(b));
+    return (max(la, lb) + 0.05) / (min(la, lb) + 0.05);
+  }
+
+  /// [cor] escurecida só o necessário para o texto branco ficar legível em cima.
+  static Color escurecerParaBranco(Color cor, {double inicio = 0.35}) {
+    for (var f = inicio; f < 0.95; f += 0.05) {
+      final escura = Color.lerp(cor, const Color(0xFF000000), f)!;
+      if (legivelComBranco(escura)) return escura;
+    }
+    return Color.lerp(cor, const Color(0xFF000000), 0.95)!;
+  }
+
   static double _luminancia(Color cor) {
     double canal(double c) => c <= 0.03928 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4).toDouble();
     return 0.2126 * canal(cor.r) + 0.7152 * canal(cor.g) + 0.0722 * canal(cor.b);

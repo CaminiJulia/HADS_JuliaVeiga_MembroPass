@@ -252,13 +252,11 @@ class _PreviaPlano extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        // A cor do plano escurecida, para o texto branco continuar legível.
+        // A cor do plano escurecida o necessário para o texto branco continuar legível.
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: cor == null
-              ? const [Cores.marca, Cores.marcaEscura]
-              : [Color.lerp(corDoPlano(cor), Colors.black, 0.35)!, Color.lerp(corDoPlano(cor), Colors.black, 0.65)!],
+          colors: degradeDoPlano(cor),
         ),
         borderRadius: BorderRadius.circular(20),
       ),
