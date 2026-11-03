@@ -19,7 +19,7 @@ então cada usuário só enxerga e altera os dados da própria organização.
 | `PUT` | `/planos/:id` | admin | Editar nome, valor, duração e cor (registrado na auditoria) |
 | `PATCH` | `/planos/:id/status` | admin | Ativar ou desativar |
 | `GET` `POST` | `/beneficios` | admin | Listar e criar benefícios (RF08) |
-| `PUT` `DELETE` | `/beneficios/:id` | admin | Editar e excluir |
+| `PUT` `DELETE` | `/beneficios/:id` | admin | Editar (inclusive o logo do parceiro, em base64, até 256 KB) e excluir |
 | `GET` `POST` | `/membros` | admin | Listar (`?busca=`) e cadastrar membros (RF06). O cadastro devolve a senha provisória |
 | `GET` `PUT` | `/membros/:id` | admin | Detalhe e edição |
 | `PATCH` | `/membros/:id/status` | admin | Desativar ou reativar, com justificativa opcional |

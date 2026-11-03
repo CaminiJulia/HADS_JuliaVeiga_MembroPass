@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import '../../../core/formatacao/datas.dart';
 import '../../../core/formatacao/moeda.dart';
 
@@ -15,6 +18,8 @@ class Beneficio {
     this.parceiro,
     this.vigInicio,
     this.vigFim,
+    this.logo,
+    this.logoTipo,
   });
 
   factory Beneficio.deJson(Map<String, dynamic> json) => Beneficio(
@@ -27,6 +32,8 @@ class Beneficio {
     vigInicio: Datas.daApi(json['vigInicio'] as String?),
     vigFim: Datas.daApi(json['vigFim'] as String?),
     planoIds: [for (final id in json['planoIds'] as List) id as String],
+    logo: json['logo'] == null ? null : base64Decode(json['logo'] as String),
+    logoTipo: json['logoTipo'] as String?,
   );
 
   final String id;
@@ -41,6 +48,18 @@ class Beneficio {
   final DateTime? vigFim;
 
   final List<String> planoIds;
+
+  /// Logo do parceiro (PNG ou JPEG), mostrado no cartão do benefício.
+  final Uint8List? logo;
+  final String? logoTipo;
+
+  /// Iniciais do parceiro (ou do benefício) para quando não há logo: "Farmácia Central" → "FC".
+  String get iniciais {
+    final palavras = (parceiro ?? nome).trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    if (palavras.isEmpty) return '?';
+    final primeira = palavras.first[0];
+    return (palavras.length > 1 ? '$primeira${palavras[1][0]}' : primeira).toUpperCase();
+  }
 
   /// Valor curto para o selo do cupom: "15%", "12,5%", "R\$ 50" ou "R\$ 12,50".
   String get valorCurto {
@@ -84,6 +103,9 @@ class DadosBeneficio {
     this.parceiro,
     this.vigInicio,
     this.vigFim,
+    this.manterLogo = true,
+    this.logo,
+    this.logoTipo,
   });
 
   final String nome;
@@ -95,6 +117,11 @@ class DadosBeneficio {
   final DateTime? vigFim;
   final List<String> planoIds;
 
+  /// `true` mantém o logo atual; senão, [logo] é o novo (ou `null` para remover).
+  final bool manterLogo;
+  final Uint8List? logo;
+  final String? logoTipo;
+
   Map<String, Object?> paraJson() => {
     'nome': nome,
     'descricao': descricao,
@@ -104,5 +131,6 @@ class DadosBeneficio {
     'vigInicio': vigInicio == null ? null : Datas.paraApi(vigInicio!),
     'vigFim': vigFim == null ? null : Datas.paraApi(vigFim!),
     'planoIds': planoIds,
+    if (!manterLogo) ...{'logo': logo == null ? null : base64Encode(logo!), 'logoTipo': logo == null ? null : logoTipo},
   };
 }

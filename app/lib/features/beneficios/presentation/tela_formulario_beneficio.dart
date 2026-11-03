@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/formatacao/datas.dart';
@@ -11,6 +13,7 @@ import '../../planos/domain/plano.dart';
 import '../../planos/presentation/seletor_planos.dart';
 import '../domain/beneficio.dart';
 import '../domain/beneficios_repositorio.dart';
+import 'logo_parceiro.dart';
 
 /// Cria um benefício novo ou edita [beneficio]. Fecha devolvendo o benefício salvo.
 class TelaFormularioBeneficio extends StatefulWidget {
@@ -37,11 +40,26 @@ class _TelaFormularioBeneficioState extends State<TelaFormularioBeneficio> {
   late DateTime? _inicio = widget.beneficio?.vigInicio;
   late DateTime? _fim = widget.beneficio?.vigFim;
   late final Set<String> _planoIds = {...?widget.beneficio?.planoIds};
+  late Uint8List? _logo = widget.beneficio?.logo;
+  late String? _logoTipo = widget.beneficio?.logoTipo;
+  bool _logoAlterado = false;
+
+  static const _tamanhoMaximoLogo = 256 * 1024;
 
   bool _salvando = false;
   String? _erro;
 
   bool get _editando => widget.beneficio != null;
+
+  /// Iniciais do parceiro digitado (ou do nome), para quando não há logo.
+  String get _iniciais => Beneficio(
+    id: '',
+    nome: _nome.text.trim().isEmpty ? '?' : _nome.text,
+    parceiro: _parceiro.text.trim().isEmpty ? null : _parceiro.text,
+    tipoDesconto: _tipo,
+    valorDesconto: 0,
+    planoIds: const [],
+  ).iniciais;
 
   @override
   void dispose() {
@@ -64,6 +82,33 @@ class _TelaFormularioBeneficioState extends State<TelaFormularioBeneficio> {
     if (escolhida == null) return;
     setState(() => inicio ? _inicio = escolhida : _fim = escolhida);
   }
+
+  Future<void> _escolherLogo() async {
+    final arquivo = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 256,
+      maxHeight: 256,
+      imageQuality: 85,
+    );
+    if (arquivo == null) return;
+    final bytes = await arquivo.readAsBytes();
+    if (!mounted) return;
+    if (bytes.length > _tamanhoMaximoLogo) {
+      avisar(context, 'O logo pode ter no máximo 256 KB.');
+      return;
+    }
+    setState(() {
+      _logo = bytes;
+      _logoTipo = arquivo.name.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+      _logoAlterado = true;
+    });
+  }
+
+  void _removerLogo() => setState(() {
+    _logo = null;
+    _logoTipo = null;
+    _logoAlterado = true;
+  });
 
   String? _validarValor(String? texto) {
     final valor = Moeda.ler(texto ?? '');
@@ -94,6 +139,9 @@ class _TelaFormularioBeneficioState extends State<TelaFormularioBeneficio> {
       vigInicio: _inicio,
       vigFim: _fim,
       planoIds: _planoIds.toList(),
+      manterLogo: !_logoAlterado,
+      logo: _logo,
+      logoTipo: _logoTipo,
     );
     final repositorio = context.read<BeneficiosRepositorio>();
     try {
@@ -148,6 +196,43 @@ class _TelaFormularioBeneficioState extends State<TelaFormularioBeneficio> {
                       textCapitalization: TextCapitalization.words,
                       maxLength: 150,
                       decoration: const InputDecoration(labelText: 'Parceiro (opcional)', counterText: ''),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        LogoParceiro(logo: _logo, iniciais: _iniciais, tamanho: 56),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Logo do parceiro', style: titulo),
+                              Text(
+                                'PNG ou JPEG, de preferência quadrado.',
+                                style: texto.bodySmall?.copyWith(color: Cores.textoSecundario),
+                              ),
+                              Wrap(
+                                spacing: 4,
+                                children: [
+                                  TextButton.icon(
+                                    key: const Key('botao-logo-beneficio'),
+                                    onPressed: _salvando ? null : _escolherLogo,
+                                    icon: const Icon(Icons.image_outlined, size: 18),
+                                    label: Text(_logo == null ? 'Escolher logo' : 'Trocar'),
+                                  ),
+                                  if (_logo != null)
+                                    TextButton.icon(
+                                      onPressed: _salvando ? null : _removerLogo,
+                                      style: TextButton.styleFrom(foregroundColor: Cores.erro),
+                                      icon: const Icon(Icons.delete_outline, size: 18),
+                                      label: const Text('Remover'),
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 20),
                     Text('Desconto', style: titulo),

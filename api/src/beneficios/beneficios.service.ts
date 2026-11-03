@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { BancoService } from '../banco/banco.service';
+import { BancoService, Consulta } from '../banco/banco.service';
 import { vincularPlanos } from '../planos/vincular-planos';
 import { SalvarBeneficioDto } from './dto/beneficio.dto';
 
@@ -17,6 +17,8 @@ export interface Beneficio {
   vigInicio: string | null;
   vigFim: string | null;
   planoIds: string[];
+  logo: string | null;
+  logoTipo: string | null;
 }
 
 interface LinhaBeneficio {
@@ -29,16 +31,20 @@ interface LinhaBeneficio {
   vig_inicio: string | null;
   vig_fim: string | null;
   plano_ids: string[];
+  logo: Buffer | null;
+  logo_tipo: string | null;
 }
 
 const SQL_LISTAR = `
   SELECT b.id, b.nome, b.descricao, b.parceiro, b.tipo_desconto, b.valor_desconto,
-         b.vig_inicio, b.vig_fim,
+         b.vig_inicio, b.vig_fim, b.logo, b.logo_tipo,
          COALESCE(array_agg(pb.plano_id) FILTER (WHERE pb.plano_id IS NOT NULL), '{}') AS plano_ids
   FROM beneficio b
   LEFT JOIN plano_beneficio pb ON pb.beneficio_id = b.id
   WHERE b.organizacao_id = $1
 `;
+
+const TAMANHO_MAXIMO_LOGO = 256 * 1024;
 
 // RF08. Sempre filtrado pela organização do token (multi-tenant).
 @Injectable()
@@ -63,6 +69,7 @@ export class BeneficiosService {
          RETURNING id`,
         [organizacaoId, ...colunas(dados)],
       );
+      await salvarLogo(consultar, id, dados);
       await vincularPlanos(
         consultar,
         'beneficio',
@@ -89,6 +96,7 @@ export class BeneficiosService {
       if (linhas.length === 0) {
         throw new NotFoundException('Benefício não encontrado.');
       }
+      await salvarLogo(consultar, id, dados);
       await vincularPlanos(
         consultar,
         'beneficio',
@@ -131,6 +139,23 @@ function colunas(dados: SalvarBeneficioDto) {
   ];
 }
 
+// Grava ou remove o logo só quando ele vier na requisição (ausente = mantém).
+async function salvarLogo(
+  consultar: Consulta,
+  id: string,
+  dados: SalvarBeneficioDto,
+) {
+  if (dados.logo === undefined) return;
+  const logo = dados.logo === null ? null : Buffer.from(dados.logo, 'base64');
+  if (logo && logo.length > TAMANHO_MAXIMO_LOGO) {
+    throw new BadRequestException('O logo pode ter no máximo 256 KB.');
+  }
+  await consultar(
+    'UPDATE beneficio SET logo = $2, logo_tipo = $3 WHERE id = $1',
+    [id, logo, logo ? dados.logoTipo : null],
+  );
+}
+
 function validarDesconto(dados: SalvarBeneficioDto) {
   if (dados.tipoDesconto === 'PERCENTUAL' && dados.valorDesconto > 100) {
     throw new BadRequestException('O desconto percentual vai até 100%.');
@@ -153,5 +178,7 @@ function paraBeneficio(linha: LinhaBeneficio): Beneficio {
     vigInicio: linha.vig_inicio,
     vigFim: linha.vig_fim,
     planoIds: linha.plano_ids,
+    logo: linha.logo ? linha.logo.toString('base64') : null,
+    logoTipo: linha.logo_tipo,
   };
 }

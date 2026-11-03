@@ -122,6 +122,10 @@ CREATE TABLE beneficio (
     valor_desconto  NUMERIC(10, 2) NOT NULL CHECK (valor_desconto > 0),
     vig_inicio      DATE,
     vig_fim         DATE,
+    -- Logo do parceiro, exibido no cartão do benefício.
+    logo            BYTEA CHECK (octet_length(logo) <= 262144),
+    logo_tipo       VARCHAR(20) CHECK (logo_tipo IN ('image/png', 'image/jpeg')),
+    CHECK ((logo IS NULL) = (logo_tipo IS NULL)),
     CHECK (tipo_desconto <> 'PERCENTUAL' OR valor_desconto <= 100),
     CHECK (vig_inicio IS NULL OR vig_fim IS NULL OR vig_fim >= vig_inicio)
 );

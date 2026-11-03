@@ -9,6 +9,7 @@ import '../../planos/domain/planos_repositorio.dart';
 import '../../planos/presentation/cor_plano.dart';
 import '../domain/beneficio.dart';
 import '../domain/beneficios_repositorio.dart';
+import 'logo_parceiro.dart';
 import 'tela_formulario_beneficio.dart';
 
 /// RF08: benefícios da organização e os planos que dão direito a cada um.
@@ -103,7 +104,6 @@ class _TelaBeneficiosState extends State<TelaBeneficios> {
       );
     }
 
-    final planos = {for (final p in _planos) p.id: p};
     final hoje = Datas.hoje();
     final vigentes = beneficios.where((b) => b.situacao(hoje) == SituacaoVigencia.vigente).length;
     final texto = Theme.of(context).textTheme;
@@ -131,7 +131,11 @@ class _TelaBeneficiosState extends State<TelaBeneficios> {
                   child: _CartaoBeneficio(
                     beneficio: b,
                     situacao: b.situacao(hoje),
-                    planos: [for (final id in b.planoIds) ?planos[id]],
+                    // Na mesma ordem da lista de planos, não na ordem em que foram vinculados.
+                    planos: [
+                      for (final p in _planos)
+                        if (b.planoIds.contains(p.id)) p,
+                    ],
                     aoEditar: () => _abrirFormulario(b),
                     aoExcluir: () => _excluir(b),
                   ),
@@ -179,7 +183,7 @@ class _CartaoBeneficio extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _SeloDesconto(beneficio),
+            LogoParceiro(logo: beneficio.logo, iniciais: beneficio.iniciais),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -187,7 +191,12 @@ class _CartaoBeneficio extends StatelessWidget {
                 children: [
                   Text(beneficio.nome, style: texto.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
                   const SizedBox(height: 6),
-                  _SeloVigencia(situacao),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [_PilulaDesconto(beneficio), _SeloVigencia(situacao)],
+                  ),
                   const SizedBox(height: 10),
                   if (parceiro != null) _Detalhe(icone: Icons.storefront_outlined, texto: parceiro),
                   _Detalhe(icone: Icons.event_outlined, texto: beneficio.descricaoVigencia),
@@ -217,37 +226,29 @@ class _CartaoBeneficio extends StatelessWidget {
   }
 }
 
-/// O desconto em destaque, como num cupom: "15%" ou "R\$ 50".
-class _SeloDesconto extends StatelessWidget {
-  const _SeloDesconto(this.beneficio);
+/// O desconto em destaque: "15% de desconto", "R\$ 50 de desconto".
+class _PilulaDesconto extends StatelessWidget {
+  const _PilulaDesconto(this.beneficio);
 
   final Beneficio beneficio;
 
   @override
   Widget build(BuildContext context) {
-    final texto = Theme.of(context).textTheme;
     return Container(
-      width: 76,
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Cores.marca, Cores.marcaEscura],
-        ),
-        borderRadius: BorderRadius.circular(14),
+        gradient: const LinearGradient(colors: [Cores.marca, Cores.marcaEscura]),
+        borderRadius: BorderRadius.circular(20),
       ),
-      child: Column(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              beneficio.valorCurto,
-              style: texto.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w800, letterSpacing: -0.5),
-            ),
+          const Icon(Icons.local_offer_outlined, size: 14, color: Cores.lilas),
+          const SizedBox(width: 5),
+          Text(
+            '${beneficio.valorCurto} de desconto',
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: 2),
-          Text('desconto', style: texto.labelSmall?.copyWith(color: Cores.lilas, letterSpacing: 0.3)),
         ],
       ),
     );

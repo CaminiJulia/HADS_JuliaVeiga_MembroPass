@@ -12,7 +12,8 @@ void main() {
 
     expect(find.text('Desconto na farmácia'), findsOneWidget);
     expect(find.text('1 benefício · 1 vigente'), findsOneWidget);
-    expect(find.text('15%'), findsOneWidget);
+    expect(find.text('15% de desconto'), findsOneWidget);
+    expect(find.text('FC'), findsOneWidget); // iniciais de "Farmácia Central" sem logo
     expect(find.text('Vigente'), findsOneWidget);
     expect(find.text('Farmácia Central'), findsOneWidget);
     expect(find.text('Sem prazo de validade'), findsOneWidget);
@@ -36,7 +37,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Cinema'), findsOneWidget);
-    expect(find.text('R\$ 20'), findsOneWidget);
+    expect(find.text('R\$ 20 de desconto'), findsOneWidget);
     expect(find.text('2 benefícios · 2 vigentes'), findsOneWidget);
   });
 
@@ -89,6 +90,7 @@ void main() {
     test('descrições', () {
       final b = comVigencia(DateTime(2026, 1, 1), DateTime(2026, 12, 31));
       expect(b.valorCurto, '12,5%');
+      expect(b.iniciais, 'X');
       expect(
         Beneficio(id: 'v', nome: 'V', tipoDesconto: TipoDesconto.valor, valorDesconto: 12.5, planoIds: const []).valorCurto,
         'R\$ 12,50',

@@ -1,6 +1,7 @@
 import { Transform } from 'class-transformer';
 import {
   IsArray,
+  IsBase64,
   IsDateString,
   IsIn,
   IsNotEmpty,
@@ -11,6 +12,7 @@ import {
   Max,
   MaxLength,
   Min,
+  ValidateIf,
 } from 'class-validator';
 
 // Texto opcional: tira espaços e transforma vazio em null.
@@ -62,4 +64,16 @@ export class SalvarBeneficioDto {
   @IsArray()
   @IsUUID('all', { each: true, message: 'Plano inválido.' })
   planoIds!: string[];
+
+  // Ausente: mantém o logo atual. null: remove. Texto: novo logo em base64.
+  @IsOptional()
+  @ValidateIf((_, valor) => valor !== null)
+  @IsBase64({}, { message: 'Logo inválido.' })
+  logo?: string | null;
+
+  @ValidateIf((dados: SalvarBeneficioDto) => typeof dados.logo === 'string')
+  @IsIn(['image/png', 'image/jpeg'], {
+    message: 'O logo deve ser PNG ou JPEG.',
+  })
+  logoTipo?: string;
 }

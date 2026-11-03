@@ -30,7 +30,7 @@ class BeneficiosRepositorioMock implements BeneficiosRepositorio {
   @override
   Future<Beneficio> editar(String id, DadosBeneficio dados) async {
     final i = _indice(id);
-    return _beneficios[i] = _deDados(id, dados);
+    return _beneficios[i] = _deDados(id, dados, anterior: _beneficios[i]);
   }
 
   @override
@@ -42,7 +42,7 @@ class BeneficiosRepositorioMock implements BeneficiosRepositorio {
     return i;
   }
 
-  static Beneficio _deDados(String id, DadosBeneficio d) => Beneficio(
+  static Beneficio _deDados(String id, DadosBeneficio d, {Beneficio? anterior}) => Beneficio(
     id: id,
     nome: d.nome,
     descricao: d.descricao,
@@ -52,5 +52,7 @@ class BeneficiosRepositorioMock implements BeneficiosRepositorio {
     vigInicio: d.vigInicio,
     vigFim: d.vigFim,
     planoIds: d.planoIds,
+    logo: d.manterLogo ? anterior?.logo : d.logo,
+    logoTipo: d.manterLogo ? anterior?.logoTipo : d.logoTipo,
   );
 }
