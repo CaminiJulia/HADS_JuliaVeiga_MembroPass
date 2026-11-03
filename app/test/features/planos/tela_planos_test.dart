@@ -48,6 +48,22 @@ void main() {
     expect(find.text('/ 180 dias'), findsOneWidget);
   });
 
+  testWidgets('prévia acompanha a digitação e atalho preenche duração e nome', (tester) async {
+    await abrirPlanos(tester);
+    await tester.tap(find.text('Novo plano'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Seu plano'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('atalho-90')));
+    await tester.enterText(find.byKey(const Key('campo-valor-plano')), '239,90');
+    await tester.pump();
+
+    expect(find.widgetWithText(TextFormField, 'Trimestral'), findsOneWidget);
+    expect(find.text('R\$ 239,90'), findsOneWidget);
+    expect(find.text('/ 90 dias'), findsOneWidget);
+    expect(find.text('≈ R\$ 79,97 por mês'), findsOneWidget);
+  });
+
   testWidgets('valida o formulário e mostra nome repetido', (tester) async {
     await abrirPlanos(tester);
     await tester.tap(find.text('Novo plano'));

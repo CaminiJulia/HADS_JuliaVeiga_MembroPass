@@ -240,9 +240,16 @@ class _CartaoPlano extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
                 children: [
-                  Text(
-                    Moeda.formatar(plano.valorReferencia),
-                    style: texto.headlineSmall?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -0.5),
+                  // Valores grandes encolhem em vez de estourar a linha.
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        Moeda.formatar(plano.valorReferencia),
+                        style: texto.headlineSmall?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -0.5),
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 6),
                   Text(
@@ -250,11 +257,13 @@ class _CartaoPlano extends StatelessWidget {
                     style: texto.bodyMedium?.copyWith(color: Cores.textoSecundario),
                   ),
                   const Spacer(),
-                  if (plano.duracaoDias != 30)
+                  if (plano.duracaoDias != 30) ...[
+                    const SizedBox(width: 8),
                     Text(
                       '≈ ${Moeda.formatar(_porMes)}/mês',
                       style: texto.labelMedium?.copyWith(color: Cores.textoSecundario),
                     ),
+                  ],
                 ],
               ),
             ),
