@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/formatacao/moeda.dart';
-import '../../../core/tema/cores.dart';
 import '../../../core/widgets/componentes.dart';
 import '../../auth/presentation/widgets/aviso_erro.dart';
 import '../domain/plano.dart';
@@ -70,12 +69,12 @@ class _TelaFormularioPlanoState extends State<TelaFormularioPlano> {
 
   @override
   Widget build(BuildContext context) {
-    final texto = Theme.of(context).textTheme;
 
     return Scaffold(
       appBar: AppBar(title: Text(_editando ? 'Editar plano' : 'Novo plano')),
       body: SafeArea(
-        child: Center(
+        child: Align(
+          alignment: Alignment.topCenter,
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: ConstrainedBox(
@@ -139,11 +138,10 @@ class _TelaFormularioPlanoState extends State<TelaFormularioPlano> {
                       },
                       onFieldSubmitted: (_) => _salvar(),
                     ),
-                    const SizedBox(height: 12),
-                    Text(
+                    const SizedBox(height: 16),
+                    const CaixaInfo(
                       'O pagamento é combinado fora do app. O valor serve de referência, e a duração '
                       'define o novo vencimento quando você confirmar um pagamento.',
-                      style: texto.bodySmall?.copyWith(color: Cores.textoSecundario),
                     ),
                     const SizedBox(height: 24),
                     FilledButton(

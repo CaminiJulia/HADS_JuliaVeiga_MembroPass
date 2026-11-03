@@ -205,25 +205,47 @@ class _TelaDetalheMembroState extends State<TelaDetalheMembro> {
             label: Text(bloqueada ? 'Desbloquear carteirinha' : 'Bloquear carteirinha'),
           ),
         ],
-        const SizedBox(height: 20),
-        _Linha(icone: Icons.mail_outline, rotulo: 'E-mail', valor: membro.email),
-        _Linha(icone: Icons.phone_outlined, rotulo: 'Telefone', valor: membro.telefone ?? 'Não informado'),
-        _Linha(
-          icone: Icons.workspace_premium_outlined,
-          rotulo: 'Plano',
-          valor: '${membro.planoNome} (ciclo de ${membro.planoDuracaoDias} dias)',
+        const _TituloSecao('Dados do membro'),
+        CartaoItem(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            child: Column(
+              children: [
+                _Linha(icone: Icons.mail_outline, rotulo: 'E-mail', valor: membro.email),
+                _Linha(icone: Icons.phone_outlined, rotulo: 'Telefone', valor: membro.telefone ?? 'Não informado'),
+                _Linha(
+                  icone: Icons.workspace_premium_outlined,
+                  rotulo: 'Plano',
+                  valor: '${membro.planoNome} (ciclo de ${membro.planoDuracaoDias} dias)',
+                ),
+                _Linha(
+                  icone: Icons.event_available_outlined,
+                  rotulo: 'Membro desde',
+                  valor: Datas.formatar(membro.dataAdesao),
+                ),
+              ],
+            ),
+          ),
         ),
-        _Linha(icone: Icons.event_available_outlined, rotulo: 'Membro desde', valor: Datas.formatar(membro.dataAdesao)),
-        const SizedBox(height: 20),
-        Text('Histórico', style: texto.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: Cores.tinta)),
-        const SizedBox(height: 8),
-        if (_historico.isEmpty)
-          Text(
-            'Nenhuma ação registrada ainda.',
-            style: texto.bodyMedium?.copyWith(color: Cores.textoSecundario),
-          )
-        else
-          for (final registro in _historico) ItemAuditoria(registro, mostrarDescricao: false),
+        const _TituloSecao('Histórico'),
+        CartaoItem(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: _historico.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text('Nenhuma ação registrada ainda.', style: texto.bodyMedium?.copyWith(color: Cores.textoSecundario)),
+                  )
+                : Column(
+                    children: [
+                      for (final (i, registro) in _historico.indexed) ...[
+                        if (i > 0) const Divider(),
+                        ItemAuditoria(registro, mostrarDescricao: false),
+                      ],
+                    ],
+                  ),
+          ),
+        ),
         const SizedBox(height: 24),
         TextButton.icon(
           onPressed: _ocupado ? null : () => _alterarAtivo(membro),
@@ -309,6 +331,27 @@ class _Linha extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _TituloSecao extends StatelessWidget {
+  const _TituloSecao(this.texto);
+
+  final String texto;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 24, 4, 10),
+      child: Text(
+        texto.toUpperCase(),
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: Cores.textoSecundario,
+              letterSpacing: 1.1,
+              fontWeight: FontWeight.w700,
+            ),
       ),
     );
   }

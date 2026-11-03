@@ -196,7 +196,7 @@ class _CartaoMembro extends StatelessWidget {
                   Text(
                     situacao == SituacaoMembro.desativado
                         ? membro.planoNome
-                        : '${membro.planoNome} · ${membro.descricaoVencimento(hoje)}',
+                        : '${membro.planoNome} · ${membro.vencimentoCurto(hoje)}',
                     overflow: TextOverflow.ellipsis,
                     style: texto.bodySmall?.copyWith(color: Cores.textoSecundario),
                   ),

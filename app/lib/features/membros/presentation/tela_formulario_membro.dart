@@ -99,7 +99,8 @@ class _TelaFormularioMembroState extends State<TelaFormularioMembro> {
     return Scaffold(
       appBar: AppBar(title: Text(_editando ? 'Editar membro' : 'Novo membro')),
       body: SafeArea(
-        child: Center(
+        child: Align(
+          alignment: Alignment.topCenter,
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: ConstrainedBox(
@@ -193,11 +194,10 @@ class _TelaFormularioMembroState extends State<TelaFormularioMembro> {
                       ),
                     ],
                     if (!_editando) ...[
-                      const SizedBox(height: 12),
-                      Text(
+                      const SizedBox(height: 16),
+                      const CaixaInfo(
                         'A carteirinha é emitida na hora, vencendo após a duração do plano. '
                         'Você verá uma senha provisória para repassar ao membro.',
-                        style: texto.bodySmall?.copyWith(color: Cores.textoSecundario),
                       ),
                     ],
                     const SizedBox(height: 24),

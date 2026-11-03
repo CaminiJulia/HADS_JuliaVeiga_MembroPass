@@ -112,7 +112,8 @@ class _TelaFormularioUnidadeState extends State<TelaFormularioUnidade> {
     return Scaffold(
       appBar: AppBar(title: Text(_editando ? 'Editar local' : 'Novo local')),
       body: SafeArea(
-        child: Center(
+        child: Align(
+          alignment: Alignment.topCenter,
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: ConstrainedBox(

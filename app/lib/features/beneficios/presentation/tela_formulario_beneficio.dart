@@ -118,7 +118,8 @@ class _TelaFormularioBeneficioState extends State<TelaFormularioBeneficio> {
     return Scaffold(
       appBar: AppBar(title: Text(_editando ? 'Editar benefício' : 'Novo benefício')),
       body: SafeArea(
-        child: Center(
+        child: Align(
+          alignment: Alignment.topCenter,
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: ConstrainedBox(

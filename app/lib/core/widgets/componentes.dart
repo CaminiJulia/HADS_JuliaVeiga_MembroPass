@@ -159,3 +159,31 @@ class CampoData extends StatelessWidget {
     );
   }
 }
+
+/// Nota explicativa em destaque discreto, com ícone de informação.
+class CaixaInfo extends StatelessWidget {
+  const CaixaInfo(this.texto, {super.key});
+
+  final String texto;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Cores.primaria.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.info_outline, size: 18, color: Cores.primaria),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(texto, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Cores.tinta, height: 1.4)),
+          ),
+        ],
+      ),
+    );
+  }
+}

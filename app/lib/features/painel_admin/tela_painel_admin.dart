@@ -1,63 +1,353 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
+import '../../core/formatacao/datas.dart';
 import '../../core/rotas.dart';
 import '../../core/suporte.dart';
 import '../../core/tema/cores.dart';
 import '../../core/widgets/componentes.dart';
 import '../auth/domain/usuario.dart';
 import '../auth/presentation/sair.dart';
+import '../membros/domain/membro.dart';
+import '../membros/domain/membros_repositorio.dart';
 
-/// Tela inicial do administrador da organização: atalhos para cada seção
-/// e o contato do suporte. Seção sem rota aparece como "Em breve".
-class TelaPainelAdmin extends StatelessWidget {
+/// Tela inicial do administrador: resumo dos membros, atalhos para cada
+/// seção e o contato do suporte (RF18).
+class TelaPainelAdmin extends StatefulWidget {
   const TelaPainelAdmin({super.key});
 
-  static const _secoes = [
+  static const _associacao = [
+    _Secao('Membros', 'Cadastro, carteirinhas e situação', Icons.people_outline, Rotas.membros),
+    _Secao('Ciclos e bloqueios', 'Confirmar pagamentos e bloquear', Icons.event_repeat_outlined, Rotas.ciclos),
     _Secao('Planos', 'Valores e duração dos ciclos', Icons.workspace_premium_outlined, Rotas.planos),
-    _Secao('Membros', 'Cadastro e carteirinhas', Icons.people_outline, Rotas.membros),
-    _Secao('Ciclos e bloqueios', 'Vencidos e a vencer', Icons.event_repeat_outlined, Rotas.ciclos),
     _Secao('Benefícios', 'Descontos e parceiros', Icons.redeem_outlined, Rotas.beneficios),
-    _Secao('Unidades e eventos', 'Onde a carteirinha vale', Icons.place_outlined, Rotas.unidades),
+  ];
+
+  static const _organizacao = [
+    _Secao('Unidades e eventos', 'Onde a carteirinha é aceita', Icons.place_outlined, Rotas.unidades),
     _Secao('Identidade visual', 'Logo e cor da carteirinha', Icons.palette_outlined, Rotas.identidade),
     _Secao('Histórico de ações', 'Auditoria da organização', Icons.history, Rotas.auditoria),
   ];
 
   @override
+  State<TelaPainelAdmin> createState() => _TelaPainelAdminState();
+}
+
+class _TelaPainelAdminState extends State<TelaPainelAdmin> {
+  /// `null` enquanto carrega ou se não foi possível carregar.
+  Map<SituacaoMembro, int>? _contagem;
+
+  @override
+  void initState() {
+    super.initState();
+    _carregarResumo();
+  }
+
+  Future<void> _carregarResumo() async {
+    try {
+      final membros = await context.read<MembrosRepositorio>().listar();
+      final hoje = Datas.hoje();
+      final contagem = <SituacaoMembro, int>{};
+      for (final m in membros) {
+        contagem.update(m.situacao(hoje), (n) => n + 1, ifAbsent: () => 1);
+      }
+      if (mounted) setState(() => _contagem = contagem);
+    } catch (_) {
+      // O resumo é complementar: sem ele, o painel continua utilizável.
+      if (mounted) setState(() => _contagem = null);
+    }
+  }
+
+  /// Abre uma seção e, na volta, atualiza o resumo.
+  Future<void> _abrir(String rota) async {
+    await Navigator.of(context).pushNamed(rota);
+    if (mounted) await _carregarResumo();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final usuario = ModalRoute.of(context)?.settings.arguments as Usuario?;
-    final texto = Theme.of(context).textTheme;
 
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(child: _Cabecalho(usuario: usuario)),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
-            sliver: SliverToBoxAdapter(
-              child: Text(
-                'Gerenciar',
-                style: texto.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: Cores.tinta),
+      body: RefreshIndicator(
+        onRefresh: _carregarResumo,
+        edgeOffset: 120,
+        child: CustomScrollView(
+          slivers: [
+            _Cabecalho(usuario: usuario),
+            SliverToBoxAdapter(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 760),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _Resumo(contagem: _contagem, aoAbrir: _abrir),
+                        const _TituloGrupo('Associação'),
+                        _GrupoSecoes(secoes: TelaPainelAdmin._associacao, aoAbrir: _abrir),
+                        const _TituloGrupo('Organização'),
+                        _GrupoSecoes(secoes: TelaPainelAdmin._organizacao, aoAbrir: _abrir),
+                        const SizedBox(height: 24),
+                        const _CartaoSuporte(),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Cabeçalho com a marca que encolhe ao rolar, mantendo o nome da organização
+/// e o botão de sair sempre visíveis.
+class _Cabecalho extends StatelessWidget {
+  const _Cabecalho({required this.usuario});
+
+  final Usuario? usuario;
+
+  @override
+  Widget build(BuildContext context) {
+    final texto = Theme.of(context).textTheme;
+    final primeiroNome = usuario?.nome.split(' ').first;
+
+    return SliverAppBar(
+      pinned: true,
+      expandedHeight: 168,
+      automaticallyImplyLeading: false,
+      backgroundColor: const Color(0xFF1F2290),
+      foregroundColor: Colors.white,
+      systemOverlayStyle: SystemUiOverlayStyle.light,
+      actions: [
+        IconButton(tooltip: 'Sair', icon: const Icon(Icons.logout), onPressed: () => sairDaConta(context)),
+        const SizedBox(width: 4),
+      ],
+      flexibleSpace: FlexibleSpaceBar(
+        titlePadding: const EdgeInsetsDirectional.only(start: 20, bottom: 16, end: 64),
+        expandedTitleScale: 1.45,
+        title: Text(
+          usuario?.organizacaoNome ?? '',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18),
+        ),
+        background: DecoratedBox(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Cores.primaria, Color(0xFF1C1F5C)],
+            ),
+          ),
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 72, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'PAINEL DA ORGANIZAÇÃO',
+                    style: texto.labelSmall?.copyWith(
+                      color: Cores.lilas,
+                      letterSpacing: 1.2,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (primeiroNome != null) ...[
+                    const SizedBox(height: 6),
+                    Text('Olá, $primeiroNome', style: texto.bodyLarge?.copyWith(color: Colors.white70)),
+                  ],
+                ],
               ),
             ),
           ),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-            sliver: SliverGrid.builder(
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 260,
-                mainAxisExtent: 164,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-              ),
-              itemCount: _secoes.length,
-              itemBuilder: (context, i) => _CartaoSecao(_secoes[i]),
+        ),
+      ),
+    );
+  }
+}
+
+/// Indicadores dos membros, com atalho para quem precisa de atenção.
+class _Resumo extends StatelessWidget {
+  const _Resumo({required this.contagem, required this.aoAbrir});
+
+  final Map<SituacaoMembro, int>? contagem;
+  final void Function(String rota) aoAbrir;
+
+  @override
+  Widget build(BuildContext context) {
+    int? soma(Iterable<SituacaoMembro> situacoes) =>
+        contagem == null ? null : situacoes.fold<int>(0, (t, s) => t + (contagem![s] ?? 0));
+
+    final ativos = soma(SituacaoMembro.values.where((s) => s != SituacaoMembro.desativado));
+    final vencendo = soma([SituacaoMembro.venceEmBreve]);
+    final atrasados = soma([SituacaoMembro.vencido, SituacaoMembro.bloqueado]);
+
+    // IntrinsicHeight + stretch: os três cartões ficam com a altura do maior.
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: _Indicador(
+              rotulo: 'Membros ativos',
+              valor: ativos,
+              icone: Icons.people_alt_outlined,
+              cor: Cores.primaria,
+              aoTocar: () => aoAbrir(Rotas.membros),
             ),
           ),
-          const SliverPadding(
-            padding: EdgeInsets.fromLTRB(20, 12, 20, 32),
-            sliver: SliverToBoxAdapter(child: _CartaoSuporte()),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _Indicador(
+              rotulo: 'Vencem em 7 dias',
+              valor: vencendo,
+              icone: Icons.schedule,
+              cor: Cores.alerta,
+              aoTocar: () => aoAbrir(Rotas.ciclos),
+            ),
           ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _Indicador(
+              rotulo: 'Vencidos ou bloqueados',
+              valor: atrasados,
+              icone: Icons.error_outline,
+              cor: Cores.erro,
+              aoTocar: () => aoAbrir(Rotas.ciclos),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Indicador extends StatelessWidget {
+  const _Indicador({
+    required this.rotulo,
+    required this.valor,
+    required this.icone,
+    required this.cor,
+    required this.aoTocar,
+  });
+
+  final String rotulo;
+  final int? valor;
+  final IconData icone;
+  final Color cor;
+  final VoidCallback aoTocar;
+
+  @override
+  Widget build(BuildContext context) {
+    final texto = Theme.of(context).textTheme;
+    return Semantics(
+      button: true,
+      label: '$rotulo: ${valor ?? 'carregando'}',
+      excludeSemantics: true,
+      child: CartaoItem(
+        aoTocar: aoTocar,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icone, size: 20, color: cor),
+              const SizedBox(height: 10),
+              Text(valor?.toString() ?? '–', style: texto.headlineSmall?.copyWith(color: Cores.tinta, height: 1)),
+              const SizedBox(height: 4),
+              Text(rotulo, maxLines: 2, style: texto.bodySmall?.copyWith(height: 1.25)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TituloGrupo extends StatelessWidget {
+  const _TituloGrupo(this.texto);
+
+  final String texto;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 28, 4, 10),
+      child: Text(
+        texto.toUpperCase(),
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+          color: Cores.textoSecundario,
+          letterSpacing: 1.1,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _Secao {
+  const _Secao(this.titulo, this.descricao, this.icone, this.rota);
+
+  final String titulo;
+  final String descricao;
+  final IconData icone;
+  final String rota;
+}
+
+/// Seções agrupadas num único cartão, com divisórias, como numa lista de ajustes.
+class _GrupoSecoes extends StatelessWidget {
+  const _GrupoSecoes({required this.secoes, required this.aoAbrir});
+
+  final List<_Secao> secoes;
+  final void Function(String rota) aoAbrir;
+
+  @override
+  Widget build(BuildContext context) {
+    final texto = Theme.of(context).textTheme;
+    return CartaoItem(
+      child: Column(
+        children: [
+          for (final (i, secao) in secoes.indexed) ...[
+            if (i > 0) const Divider(indent: 68),
+            InkWell(
+              onTap: () => aoAbrir(secao.rota),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(9),
+                      decoration: BoxDecoration(
+                        color: Cores.primaria.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(secao.icone, color: Cores.primaria, size: 22),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(secao.titulo, style: texto.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 2),
+                          Text(secao.descricao, style: texto.bodySmall),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right, color: Cores.textoSecundario),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -73,26 +363,28 @@ class _CartaoSuporte extends StatelessWidget {
     final texto = Theme.of(context).textTheme;
 
     Widget contato(IconData icone, String valor, String rotulo) => Row(
-          children: [
-            Icon(icone, size: 20, color: Cores.primaria),
-            const SizedBox(width: 10),
-            Expanded(child: SelectableText(valor, style: texto.bodyMedium?.copyWith(color: Cores.tinta))),
-            IconButton(
-              tooltip: 'Copiar $rotulo',
-              icon: const Icon(Icons.copy, size: 18),
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: valor));
-                avisar(context, '${rotulo[0].toUpperCase()}${rotulo.substring(1)} copiado.');
-              },
-            ),
-          ],
-        );
+      children: [
+        Icon(icone, size: 20, color: Cores.primaria),
+        const SizedBox(width: 12),
+        Expanded(child: SelectableText(valor, style: texto.bodyMedium)),
+        IconButton(
+          tooltip: 'Copiar $rotulo',
+          icon: const Icon(Icons.copy_rounded, size: 18),
+          color: Cores.textoSecundario,
+          onPressed: () {
+            Clipboard.setData(ClipboardData(text: valor));
+            avisar(context, '${rotulo[0].toUpperCase()}${rotulo.substring(1)} copiado.');
+          },
+        ),
+      ],
+    );
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 4, 8),
       decoration: BoxDecoration(
-        color: Cores.lilas.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(18),
+        color: Cores.primaria.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Cores.primaria.withValues(alpha: 0.12)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,177 +393,18 @@ class _CartaoSuporte extends StatelessWidget {
             children: [
               const Icon(Icons.support_agent, color: Cores.primaria),
               const SizedBox(width: 10),
-              Text('Precisa de ajuda?', style: texto.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: Cores.tinta)),
+              Text('Precisa de ajuda?', style: texto.titleSmall),
             ],
           ),
           const SizedBox(height: 4),
-          Text(
-            'Fale com o suporte do MembroPass. ${Suporte.horario}.',
-            style: texto.bodySmall?.copyWith(color: Cores.textoSecundario),
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Text('Fale com o suporte do MembroPass. ${Suporte.horario}.', style: texto.bodySmall),
           ),
           const SizedBox(height: 4),
           contato(Icons.mail_outline, Suporte.email, 'e-mail'),
           contato(Icons.chat_outlined, Suporte.whatsapp, 'WhatsApp'),
         ],
-      ),
-    );
-  }
-}
-
-class _Cabecalho extends StatelessWidget {
-  const _Cabecalho({required this.usuario});
-
-  final Usuario? usuario;
-
-  @override
-  Widget build(BuildContext context) {
-    final texto = Theme.of(context).textTheme;
-    final primeiroNome = usuario?.nome.split(' ').first;
-
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Cores.primaria, Color(0xFF1C1F5C)],
-        ),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 8, 28),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Painel da organização',
-                        style: texto.labelLarge?.copyWith(color: Cores.lilas, letterSpacing: 0.3),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        usuario?.organizacaoNome ?? '',
-                        style: texto.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w800),
-                      ),
-                      const SizedBox(height: 4),
-                      if (primeiroNome != null)
-                        Text(
-                          'Olá, $primeiroNome',
-                          style: texto.bodyMedium?.copyWith(color: Colors.white70),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              IconButton(
-                tooltip: 'Sair',
-                color: Colors.white,
-                icon: const Icon(Icons.logout),
-                onPressed: () => sairDaConta(context),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Secao {
-  const _Secao(this.titulo, this.descricao, this.icone, [this.rota]);
-
-  final String titulo;
-  final String descricao;
-  final IconData icone;
-
-  /// `null` enquanto a seção não foi implementada.
-  final String? rota;
-}
-
-class _CartaoSecao extends StatelessWidget {
-  const _CartaoSecao(this.secao);
-
-  final _Secao secao;
-
-  @override
-  Widget build(BuildContext context) {
-    final texto = Theme.of(context).textTheme;
-    final disponivel = secao.rota != null;
-
-    return Material(
-      color: Cores.superficie,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: const BorderSide(color: Cores.borda),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: disponivel ? () => Navigator.of(context).pushNamed(secao.rota!) : null,
-        child: Opacity(
-          opacity: disponivel ? 1 : 0.55,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Cores.lilas.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(secao.icone, color: Cores.primaria),
-                    ),
-                    const Spacer(),
-                    if (!disponivel) const _Selo('Em breve'),
-                  ],
-                ),
-                const Spacer(),
-                Text(
-                  secao.titulo,
-                  style: texto.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: Cores.tinta),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  secao.descricao,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: texto.bodySmall?.copyWith(color: Cores.textoSecundario),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Selo extends StatelessWidget {
-  const _Selo(this.texto);
-
-  final String texto;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: Cores.fundo,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Cores.borda),
-      ),
-      child: Text(
-        texto,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Cores.textoSecundario),
       ),
     );
   }
