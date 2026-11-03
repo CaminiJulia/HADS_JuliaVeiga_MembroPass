@@ -23,7 +23,6 @@ class PlanosRepositorioApi implements PlanosRepositorio {
 
   @override
   Future<Plano> alterarAtivo(String id, {required bool ativo}) async => Plano.deJson(
-        await _api.patch('/planos/$id/status', {'status': ativo ? 'ATIVO' : 'INATIVO'})
-            as Map<String, dynamic>,
-      );
+    await _api.patch('/planos/$id/status', {'status': ativo ? 'ATIVO' : 'INATIVO'}) as Map<String, dynamic>,
+  );
 }

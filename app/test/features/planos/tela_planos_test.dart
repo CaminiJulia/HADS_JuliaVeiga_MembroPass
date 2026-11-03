@@ -64,6 +64,25 @@ void main() {
     expect(find.text('≈ R\$ 79,97 por mês'), findsOneWidget);
   });
 
+  testWidgets('salva a cor escolhida e mostra no cartão do plano', (tester) async {
+    await abrirPlanos(tester);
+    await tester.tap(find.text('Novo plano'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byKey(const Key('campo-nome-plano')), 'Família');
+    await tester.enterText(find.byKey(const Key('campo-valor-plano')), '149,90');
+    await tester.enterText(find.byKey(const Key('campo-duracao-plano')), '30');
+    await rolarAte(tester, find.bySemanticsLabel('Cor #2BB5A0'));
+    await tester.tap(find.bySemanticsLabel('Cor #2BB5A0'));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('botao-salvar-plano')));
+    await tester.pumpAndSettle();
+
+    final cartao = find.ancestor(of: find.text('Família'), matching: find.byType(Row)).first;
+    final icone = tester.widget<Icon>(find.descendant(of: cartao, matching: find.byIcon(Icons.workspace_premium_outlined)));
+    expect(icone.color, const Color(0xFF2BB5A0));
+  });
+
   testWidgets('valida o formulário e mostra nome repetido', (tester) async {
     await abrirPlanos(tester);
     await tester.tap(find.text('Novo plano'));

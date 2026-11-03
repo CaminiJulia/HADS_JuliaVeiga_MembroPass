@@ -45,7 +45,12 @@ class _TelaFormularioMembroState extends State<TelaFormularioMembro> {
       final planos = await context.read<PlanosRepositorio>().listar();
       // Só planos ativos aceitam membros; o plano atual aparece mesmo se inativo.
       if (mounted) {
-        setState(() => _planos = [for (final p in planos) if (p.ativo || p.id == _planoId) p]);
+        setState(
+          () => _planos = [
+            for (final p in planos)
+              if (p.ativo || p.id == _planoId) p,
+          ],
+        );
       }
     } catch (e) {
       if (mounted) setState(() => _erro = mensagemDeErro(e));
@@ -110,10 +115,7 @@ class _TelaFormularioMembroState extends State<TelaFormularioMembro> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (_erro != null) ...[
-                      AvisoErro(mensagem: _erro!),
-                      const SizedBox(height: 16),
-                    ],
+                    if (_erro != null) ...[AvisoErro(mensagem: _erro!), const SizedBox(height: 16)],
                     TextFormField(
                       key: const Key('campo-nome-membro'),
                       controller: _nome,
@@ -178,10 +180,7 @@ class _TelaFormularioMembroState extends State<TelaFormularioMembro> {
                         ),
                         items: [
                           for (final p in planos)
-                            DropdownMenuItem(
-                              value: p.id,
-                              child: Text(p.ativo ? p.nome : '${p.nome} (inativo)'),
-                            ),
+                            DropdownMenuItem(value: p.id, child: Text(p.ativo ? p.nome : '${p.nome} (inativo)')),
                         ],
                         onChanged: _salvando ? null : (id) => setState(() => _planoId = id),
                         validator: (id) => id == null ? 'Escolha um plano.' : null,

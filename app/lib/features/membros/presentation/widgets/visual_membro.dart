@@ -5,11 +5,11 @@ import '../../domain/membro.dart';
 
 /// Cor que representa cada situação (selo, faixa do cartão e barra do ciclo).
 Color corDaSituacao(SituacaoMembro situacao) => switch (situacao) {
-      SituacaoMembro.emDia => Cores.sucesso,
-      SituacaoMembro.venceEmBreve => Cores.alerta,
-      SituacaoMembro.vencido || SituacaoMembro.bloqueado => Cores.erro,
-      SituacaoMembro.desativado => Cores.textoSecundario,
-    };
+  SituacaoMembro.emDia => Cores.sucesso,
+  SituacaoMembro.venceEmBreve => Cores.alerta,
+  SituacaoMembro.vencido || SituacaoMembro.bloqueado => Cores.erro,
+  SituacaoMembro.desativado => Cores.textoSecundario,
+};
 
 /// Selo com a situação do membro: fundo translúcido e borda na cor da situação.
 class SeloSituacao extends StatelessWidget {
@@ -29,11 +29,9 @@ class SeloSituacao extends StatelessWidget {
       ),
       child: Text(
         situacao.rotulo,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: cor,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.2,
-            ),
+        style: Theme.of(
+          context,
+        ).textTheme.labelSmall?.copyWith(color: cor, fontWeight: FontWeight.w700, letterSpacing: 0.2),
       ),
     );
   }

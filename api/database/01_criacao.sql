@@ -49,6 +49,8 @@ CREATE TABLE plano_associacao (
     nome              VARCHAR(100) NOT NULL,
     valor_referencia  NUMERIC(10, 2) NOT NULL CHECK (valor_referencia >= 0),
     duracao_dias      INTEGER NOT NULL CHECK (duracao_dias > 0),
+    -- Cor de identificação do plano no app (#RRGGBB); NULL usa a cor padrão.
+    cor               CHAR(7) CHECK (cor ~ '^#[0-9A-F]{6}$'),
     status            status_cadastro NOT NULL DEFAULT 'ATIVO'
 );
 

@@ -20,10 +20,10 @@ class Carteirinha {
   const Carteirinha({required this.status, required this.dataVencimento, required this.qrVersao});
 
   factory Carteirinha.deJson(Map<String, dynamic> json) => Carteirinha(
-        status: StatusCarteirinha.values.byName((json['status'] as String).toLowerCase()),
-        dataVencimento: DateTime.parse(json['dataVencimento'] as String),
-        qrVersao: json['qrVersao'] as int,
-      );
+    status: StatusCarteirinha.values.byName((json['status'] as String).toLowerCase()),
+    dataVencimento: DateTime.parse(json['dataVencimento'] as String),
+    qrVersao: json['qrVersao'] as int,
+  );
 
   final StatusCarteirinha status;
   final DateTime dataVencimento;
@@ -42,23 +42,25 @@ class Membro {
     required this.planoNome,
     required this.planoDuracaoDias,
     required this.dataAdesao,
+    this.planoCor,
     required this.ativo,
     required this.carteirinha,
     this.telefone,
   });
 
   factory Membro.deJson(Map<String, dynamic> json) => Membro(
-        id: json['id'] as String,
-        nome: json['nome'] as String,
-        email: json['email'] as String,
-        telefone: json['telefone'] as String?,
-        planoId: json['planoId'] as String,
-        planoNome: json['planoNome'] as String,
-        planoDuracaoDias: json['planoDuracaoDias'] as int,
-        dataAdesao: DateTime.parse(json['dataAdesao'] as String),
-        ativo: json['status'] == 'ATIVO',
-        carteirinha: Carteirinha.deJson(json['carteirinha'] as Map<String, dynamic>),
-      );
+    id: json['id'] as String,
+    nome: json['nome'] as String,
+    email: json['email'] as String,
+    telefone: json['telefone'] as String?,
+    planoId: json['planoId'] as String,
+    planoNome: json['planoNome'] as String,
+    planoDuracaoDias: json['planoDuracaoDias'] as int,
+    planoCor: json['planoCor'] as String?,
+    dataAdesao: DateTime.parse(json['dataAdesao'] as String),
+    ativo: json['status'] == 'ATIVO',
+    carteirinha: Carteirinha.deJson(json['carteirinha'] as Map<String, dynamic>),
+  );
 
   /// Quantos dias antes do vencimento o membro aparece como "Vence em breve".
   static const diasAviso = 7;
@@ -72,6 +74,9 @@ class Membro {
 
   /// Duração do ciclo do plano atual, usada no próximo pagamento.
   final int planoDuracaoDias;
+
+  /// Cor do plano ("#RRGGBB"), para identificá-lo nas listas.
+  final String? planoCor;
   final DateTime dataAdesao;
   final bool ativo;
   final Carteirinha carteirinha;
@@ -109,17 +114,18 @@ class Membro {
 
   /// Cópia com outra carteirinha ou outro status (usada pelo repositório simulado).
   Membro copyWith({Carteirinha? carteirinha, bool? ativo}) => Membro(
-        id: id,
-        nome: nome,
-        email: email,
-        telefone: telefone,
-        planoId: planoId,
-        planoNome: planoNome,
-        planoDuracaoDias: planoDuracaoDias,
-        dataAdesao: dataAdesao,
-        ativo: ativo ?? this.ativo,
-        carteirinha: carteirinha ?? this.carteirinha,
-      );
+    id: id,
+    nome: nome,
+    email: email,
+    telefone: telefone,
+    planoId: planoId,
+    planoNome: planoNome,
+    planoDuracaoDias: planoDuracaoDias,
+    planoCor: planoCor,
+    dataAdesao: dataAdesao,
+    ativo: ativo ?? this.ativo,
+    carteirinha: carteirinha ?? this.carteirinha,
+  );
 
   /// Iniciais para o avatar: "Marina Membro" → "MM".
   String get iniciais {

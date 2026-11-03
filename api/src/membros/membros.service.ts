@@ -20,6 +20,7 @@ export interface Membro {
   planoId: string;
   planoNome: string;
   planoDuracaoDias: number;
+  planoCor: string | null;
   dataAdesao: string;
   status: 'ATIVO' | 'DESATIVADO' | 'CANCELADO';
   carteirinha: {
@@ -37,6 +38,7 @@ interface LinhaMembro {
   plano_id: string;
   plano_nome: string;
   plano_duracao_dias: number;
+  plano_cor: string | null;
   data_adesao: string;
   status: Membro['status'];
   carteirinha_status: Membro['carteirinha']['status'];
@@ -46,7 +48,7 @@ interface LinhaMembro {
 
 const SQL_MEMBROS = `
   SELECT m.id, m.nome, m.email, m.telefone, m.plano_id, p.nome AS plano_nome,
-         p.duracao_dias AS plano_duracao_dias, m.data_adesao, m.status,
+         p.duracao_dias AS plano_duracao_dias, p.cor AS plano_cor, m.data_adesao, m.status,
          c.status AS carteirinha_status, c.data_vencimento, c.qr_versao
   FROM membro m
   JOIN plano_associacao p ON p.id = m.plano_id
@@ -294,6 +296,7 @@ function paraMembro(linha: LinhaMembro): Membro {
     planoId: linha.plano_id,
     planoNome: linha.plano_nome,
     planoDuracaoDias: linha.plano_duracao_dias,
+    planoCor: linha.plano_cor,
     dataAdesao: linha.data_adesao,
     status: linha.status,
     carteirinha: {

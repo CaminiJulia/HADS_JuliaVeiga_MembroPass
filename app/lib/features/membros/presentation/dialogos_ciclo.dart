@@ -54,10 +54,7 @@ class _DialogoPagamentoState extends State<_DialogoPagamento> {
             onTap: _escolher,
             borderRadius: BorderRadius.circular(12),
             child: InputDecorator(
-              decoration: const InputDecoration(
-                labelText: 'Data do pagamento',
-                prefixIcon: Icon(Icons.event_outlined),
-              ),
+              decoration: const InputDecoration(labelText: 'Data do pagamento', prefixIcon: Icon(Icons.event_outlined)),
               child: Text(Datas.formatar(_data)),
             ),
           ),
@@ -93,7 +90,9 @@ class _Resumo extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: [
-          Expanded(child: Text(rotulo, style: estilo?.copyWith(color: Cores.textoSecundario))),
+          Expanded(
+            child: Text(rotulo, style: estilo?.copyWith(color: Cores.textoSecundario)),
+          ),
           Text(
             valor,
             style: estilo?.copyWith(
@@ -119,13 +118,8 @@ Future<String?> pedirJustificativa(
 }) {
   return showDialog<String>(
     context: context,
-    builder: (_) => _DialogoJustificativa(
-      titulo: titulo,
-      mensagem: mensagem,
-      rotulo: rotulo,
-      acao: acao,
-      obrigatoria: obrigatoria,
-    ),
+    builder: (_) =>
+        _DialogoJustificativa(titulo: titulo, mensagem: mensagem, rotulo: rotulo, acao: acao, obrigatoria: obrigatoria),
   );
 }
 
@@ -179,8 +173,7 @@ class _DialogoJustificativaState extends State<_DialogoJustificativa> {
               maxLength: 500,
               textCapitalization: TextCapitalization.sentences,
               decoration: InputDecoration(labelText: widget.rotulo),
-              validator: (v) =>
-                  widget.obrigatoria && (v ?? '').trim().isEmpty ? 'Informe o motivo.' : null,
+              validator: (v) => widget.obrigatoria && (v ?? '').trim().isEmpty ? 'Informe o motivo.' : null,
             ),
           ],
         ),

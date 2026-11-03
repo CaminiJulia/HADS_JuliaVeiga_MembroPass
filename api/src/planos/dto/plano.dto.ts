@@ -4,7 +4,9 @@ import {
   IsInt,
   IsNotEmpty,
   IsNumber,
+  IsOptional,
   IsString,
+  Matches,
   Max,
   MaxLength,
   Min,
@@ -31,6 +33,16 @@ export class SalvarPlanoDto {
   @Min(1, { message: 'A duração deve ser de pelo menos 1 dia.' })
   @Max(3650, { message: 'A duração pode ser de no máximo 3650 dias.' })
   duracaoDias!: number;
+
+  // Opcional; null ou ausente usa a cor padrão do app.
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim().toUpperCase() : value,
+  )
+  @IsOptional()
+  @Matches(/^#[0-9A-F]{6}$/, {
+    message: 'Cor inválida. Use o formato #RRGGBB.',
+  })
+  cor?: string | null;
 }
 
 export class AlterarStatusPlanoDto {

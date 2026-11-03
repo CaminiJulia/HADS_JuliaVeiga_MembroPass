@@ -20,7 +20,10 @@ class SeletorPlanos extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final visiveis = [for (final p in planos) if (p.ativo || selecionados.contains(p.id)) p];
+    final visiveis = [
+      for (final p in planos)
+        if (p.ativo || selecionados.contains(p.id)) p,
+    ];
     if (visiveis.isEmpty) {
       return Text(
         'Cadastre um plano primeiro.',

@@ -75,9 +75,9 @@ class _TelaDetalheMembroState extends State<TelaDetalheMembro> {
   }
 
   Future<void> _editar(Membro membro) async {
-    final atualizado = await Navigator.of(context).push<Membro>(
-      MaterialPageRoute(builder: (_) => TelaFormularioMembro(membro: membro)),
-    );
+    final atualizado = await Navigator.of(
+      context,
+    ).push<Membro>(MaterialPageRoute(builder: (_) => TelaFormularioMembro(membro: membro)));
     if (atualizado == null || !mounted) return;
     setState(() => _membro = atualizado);
     avisar(context, 'Dados de ${atualizado.nome} atualizados.');
@@ -122,7 +122,8 @@ class _TelaDetalheMembroState extends State<TelaDetalheMembro> {
       justificativa = await pedirJustificativa(
         context,
         titulo: 'Desativar ${membro.nome}?',
-        mensagem: 'A carteirinha deixa de valer e o membro não consegue mais entrar no app. '
+        mensagem:
+            'A carteirinha deixa de valer e o membro não consegue mais entrar no app. '
             'Você pode reativar depois.',
         rotulo: 'Motivo (opcional)',
         acao: 'Desativar',
@@ -154,8 +155,8 @@ class _TelaDetalheMembroState extends State<TelaDetalheMembro> {
       body: _erro != null
           ? AvisoTela(icone: Icons.cloud_off, texto: _erro!, aoTentarDeNovo: _carregar)
           : membro == null
-              ? const Center(child: CircularProgressIndicator())
-              : _conteudo(membro),
+          ? const Center(child: CircularProgressIndicator())
+          : _conteudo(membro),
     );
   }
 
@@ -234,7 +235,10 @@ class _TelaDetalheMembroState extends State<TelaDetalheMembro> {
             child: _historico.isEmpty
                 ? Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Text('Nenhuma ação registrada ainda.', style: texto.bodyMedium?.copyWith(color: Cores.textoSecundario)),
+                    child: Text(
+                      'Nenhuma ação registrada ainda.',
+                      style: texto.bodyMedium?.copyWith(color: Cores.textoSecundario),
+                    ),
                   )
                 : Column(
                     children: [
@@ -285,14 +289,20 @@ class _CartaoCarteirinha extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(c.status == StatusCarteirinha.ativa ? Icons.qr_code_2 : Icons.qr_code_2_outlined,
-              size: 48, color: c.status == StatusCarteirinha.ativa ? Colors.white : Colors.white38),
+          Icon(
+            c.status == StatusCarteirinha.ativa ? Icons.qr_code_2 : Icons.qr_code_2_outlined,
+            size: 48,
+            color: c.status == StatusCarteirinha.ativa ? Colors.white : Colors.white38,
+          ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(statusTexto, style: texto.titleSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
+                Text(
+                  statusTexto,
+                  style: texto.titleSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
+                ),
                 const SizedBox(height: 4),
                 Text(membro.descricaoVencimento(hoje), style: texto.bodySmall?.copyWith(color: Colors.white70)),
                 Text('Versão do QR Code: ${c.qrVersao}', style: texto.bodySmall?.copyWith(color: Cores.lilas)),
@@ -348,10 +358,10 @@ class _TituloSecao extends StatelessWidget {
       child: Text(
         texto.toUpperCase(),
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: Cores.textoSecundario,
-              letterSpacing: 1.1,
-              fontWeight: FontWeight.w700,
-            ),
+          color: Cores.textoSecundario,
+          letterSpacing: 1.1,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

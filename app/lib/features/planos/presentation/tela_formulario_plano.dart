@@ -8,6 +8,7 @@ import '../../../core/widgets/componentes.dart';
 import '../../auth/presentation/widgets/aviso_erro.dart';
 import '../domain/plano.dart';
 import '../domain/planos_repositorio.dart';
+import 'cor_plano.dart';
 
 /// Cria um plano novo ou edita [plano], com prévia do cartão enquanto digita.
 /// Fecha devolvendo o plano salvo.
@@ -31,6 +32,7 @@ class _TelaFormularioPlanoState extends State<TelaFormularioPlano> {
   );
   late final _duracao = TextEditingController(text: widget.plano?.duracaoDias.toString());
 
+  late String? _cor = widget.plano?.cor;
   bool _salvando = false;
   String? _erro;
 
@@ -70,6 +72,7 @@ class _TelaFormularioPlanoState extends State<TelaFormularioPlano> {
       nome: _nome.text.trim(),
       valorReferencia: Moeda.ler(_valor.text)!,
       duracaoDias: int.parse(_duracao.text),
+      cor: _cor,
     );
     final repositorio = context.read<PlanosRepositorio>();
     try {
@@ -111,12 +114,9 @@ class _TelaFormularioPlanoState extends State<TelaFormularioPlano> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
               children: [
-                _PreviaPlano(nome: _nome.text.trim(), valor: Moeda.ler(_valor.text), dias: dias),
+                _PreviaPlano(nome: _nome.text.trim(), valor: Moeda.ler(_valor.text), dias: dias, cor: _cor),
                 const SizedBox(height: 20),
-                if (_erro != null) ...[
-                  AvisoErro(mensagem: _erro!),
-                  const SizedBox(height: 16),
-                ],
+                if (_erro != null) ...[AvisoErro(mensagem: _erro!), const SizedBox(height: 16)],
                 Padding(
                   padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
                   child: Text(
@@ -197,7 +197,28 @@ class _TelaFormularioPlanoState extends State<TelaFormularioPlano> {
                       ),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 0, 4, 4),
+                  child: Text(
+                    'COR DO PLANO',
+                    style: texto.labelMedium?.copyWith(
+                      color: Cores.textoSecundario,
+                      letterSpacing: 1.1,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+                  child: Text('Identifica o plano nas listas de planos e de membros.', style: texto.bodySmall),
+                ),
+                SeletorCorPlano(
+                  selecionada: _cor,
+                  habilitado: !_salvando,
+                  aoEscolher: (cor) => setState(() => _cor = cor),
+                ),
+                const SizedBox(height: 24),
                 const CaixaInfo(
                   'O pagamento é combinado fora do app. O valor serve de referência, e a duração '
                   'define o novo vencimento quando você confirmar um pagamento.',
@@ -213,11 +234,14 @@ class _TelaFormularioPlanoState extends State<TelaFormularioPlano> {
 
 /// Como o plano vai aparecer, atualizado a cada tecla.
 class _PreviaPlano extends StatelessWidget {
-  const _PreviaPlano({required this.nome, required this.valor, required this.dias});
+  const _PreviaPlano({required this.nome, required this.valor, required this.dias, required this.cor});
 
   final String nome;
   final double? valor;
   final int? dias;
+
+  /// Cor do plano; `null` usa o azul da marca.
+  final String? cor;
 
   @override
   Widget build(BuildContext context) {
@@ -228,10 +252,13 @@ class _PreviaPlano extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        // A cor do plano escurecida, para o texto branco continuar legível.
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Cores.marca, Cores.marcaEscura],
+          colors: cor == null
+              ? const [Cores.marca, Cores.marcaEscura]
+              : [Color.lerp(corDoPlano(cor), Colors.black, 0.35)!, Color.lerp(corDoPlano(cor), Colors.black, 0.65)!],
         ),
         borderRadius: BorderRadius.circular(20),
       ),
@@ -240,7 +267,7 @@ class _PreviaPlano extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.workspace_premium_outlined, color: Cores.lilas, size: 20),
+              const Icon(Icons.workspace_premium_outlined, color: Colors.white70, size: 20),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -252,7 +279,7 @@ class _PreviaPlano extends StatelessWidget {
                   ),
                 ),
               ),
-              Text('PRÉVIA', style: texto.labelSmall?.copyWith(color: Cores.lilas, letterSpacing: 1.2)),
+              Text('PRÉVIA', style: texto.labelSmall?.copyWith(color: Colors.white70, letterSpacing: 1.2)),
             ],
           ),
           const SizedBox(height: 14),
@@ -267,8 +294,11 @@ class _PreviaPlano extends StatelessWidget {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     valor == null ? 'R\$ —' : Moeda.formatar(valor!),
-                    style: texto.headlineMedium
-                        ?.copyWith(color: Colors.white, fontWeight: FontWeight.w800, letterSpacing: -0.5),
+                    style: texto.headlineMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                    ),
                   ),
                 ),
               ),
@@ -281,7 +311,7 @@ class _PreviaPlano extends StatelessWidget {
           ),
           if (porMes != null) ...[
             const SizedBox(height: 4),
-            Text('≈ ${Moeda.formatar(porMes)} por mês', style: texto.bodySmall?.copyWith(color: Cores.lilas)),
+            Text('≈ ${Moeda.formatar(porMes)} por mês', style: texto.bodySmall?.copyWith(color: Colors.white70)),
           ],
         ],
       ),

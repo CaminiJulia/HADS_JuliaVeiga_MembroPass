@@ -8,6 +8,7 @@ import '../../beneficios/domain/beneficios_repositorio.dart';
 import '../../membros/domain/membros_repositorio.dart';
 import '../domain/plano.dart';
 import '../domain/planos_repositorio.dart';
+import 'cor_plano.dart';
 import 'tela_formulario_plano.dart';
 
 /// RF04: planos da organização em cartões de preço, com quantos membros e
@@ -75,9 +76,9 @@ class _TelaPlanosState extends State<TelaPlanos> {
   }
 
   Future<void> _abrirFormulario([Plano? plano]) async {
-    final salvo = await Navigator.of(context).push<Plano>(
-      MaterialPageRoute(builder: (_) => TelaFormularioPlano(plano: plano)),
-    );
+    final salvo = await Navigator.of(
+      context,
+    ).push<Plano>(MaterialPageRoute(builder: (_) => TelaFormularioPlano(plano: plano)));
     if (salvo == null || !mounted) return;
     avisar(context, plano == null ? 'Plano "${salvo.nome}" criado.' : 'Plano "${salvo.nome}" atualizado.');
     await _carregar();
@@ -88,7 +89,8 @@ class _TelaPlanosState extends State<TelaPlanos> {
         !await confirmar(
           context,
           titulo: 'Desativar "${plano.nome}"?',
-          mensagem: 'Novos membros não poderão ser vinculados a este plano. '
+          mensagem:
+              'Novos membros não poderão ser vinculados a este plano. '
               'Os membros que já estão nele continuam normalmente.',
           acao: 'Desativar',
         )) {
@@ -195,96 +197,100 @@ class _CartaoPlano extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final texto = Theme.of(context).textTheme;
+    final cor = corDoPlano(plano.cor);
 
     return CartaoItem(
       aoTocar: aoEditar,
       esmaecido: !plano.ativo,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 4, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      // Faixa sobreposta à esquerda: não interfere na altura do conteúdo.
+      child: Stack(
+        children: [
+          Positioned(left: 0, top: 0, bottom: 0, width: 4, child: ColoredBox(color: cor)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 14, 4, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Cores.primaria.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.workspace_premium_outlined, size: 20, color: Cores.primaria),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    plano.nome,
-                    overflow: TextOverflow.ellipsis,
-                    style: texto.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-                  ),
-                ),
-                if (!plano.ativo) const Selo('Inativo', cor: Cores.borda, corTexto: Cores.textoSecundario),
-                PopupMenuButton<VoidCallback>(
-                  tooltip: 'Opções',
-                  onSelected: (acao) => acao(),
-                  itemBuilder: (_) => [
-                    PopupMenuItem(value: aoEditar, child: const Text('Editar')),
-                    PopupMenuItem(value: aoAlterarAtivo, child: Text(plano.ativo ? 'Desativar' : 'Reativar')),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  // Valores grandes encolhem em vez de estourar a linha.
-                  Flexible(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: cor.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(Icons.workspace_premium_outlined, size: 20, color: cor),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
                       child: Text(
-                        Moeda.formatar(plano.valorReferencia),
-                        style: texto.headlineSmall?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -0.5),
+                        plano.nome,
+                        overflow: TextOverflow.ellipsis,
+                        style: texto.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '/ ${plano.duracaoDias == 1 ? '1 dia' : '${plano.duracaoDias} dias'}',
-                    style: texto.bodyMedium?.copyWith(color: Cores.textoSecundario),
-                  ),
-                  const Spacer(),
-                  if (plano.duracaoDias != 30) ...[
-                    const SizedBox(width: 8),
-                    Text(
-                      '≈ ${Moeda.formatar(_porMes)}/mês',
-                      style: texto.labelMedium?.copyWith(color: Cores.textoSecundario),
+                    if (!plano.ativo) const Selo('Inativo', cor: Cores.borda, corTexto: Cores.textoSecundario),
+                    PopupMenuButton<VoidCallback>(
+                      tooltip: 'Opções',
+                      onSelected: (acao) => acao(),
+                      itemBuilder: (_) => [
+                        PopupMenuItem(value: aoEditar, child: const Text('Editar')),
+                        PopupMenuItem(value: aoAlterarAtivo, child: Text(plano.ativo ? 'Desativar' : 'Reativar')),
+                      ],
                     ),
                   ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            const Divider(),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                _Contagem(
-                  icone: Icons.people_alt_outlined,
-                  texto: membros == 1 ? '1 membro' : '$membros membros',
                 ),
-                const SizedBox(width: 20),
-                _Contagem(
-                  icone: Icons.redeem_outlined,
-                  texto: beneficios == 1 ? '1 benefício' : '$beneficios benefícios',
+                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      // Valores grandes encolhem em vez de estourar a linha.
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            Moeda.formatar(plano.valorReferencia),
+                            style: texto.headlineSmall?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -0.5),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '/ ${plano.duracaoDias == 1 ? '1 dia' : '${plano.duracaoDias} dias'}',
+                        style: texto.bodyMedium?.copyWith(color: Cores.textoSecundario),
+                      ),
+                      const Spacer(),
+                      if (plano.duracaoDias != 30) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          '≈ ${Moeda.formatar(_porMes)}/mês',
+                          style: texto.labelMedium?.copyWith(color: Cores.textoSecundario),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                const Divider(),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    _Contagem(icone: Icons.people_alt_outlined, texto: membros == 1 ? '1 membro' : '$membros membros'),
+                    const SizedBox(width: 20),
+                    _Contagem(
+                      icone: Icons.redeem_outlined,
+                      texto: beneficios == 1 ? '1 benefício' : '$beneficios benefícios',
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

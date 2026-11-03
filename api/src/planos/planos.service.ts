@@ -10,6 +10,7 @@ export interface Plano {
   nome: string;
   valorReferencia: number;
   duracaoDias: number;
+  cor: string | null;
   status: 'ATIVO' | 'INATIVO';
 }
 
@@ -18,10 +19,11 @@ interface LinhaPlano {
   nome: string;
   valor_referencia: string;
   duracao_dias: number;
+  cor: string | null;
   status: 'ATIVO' | 'INATIVO';
 }
 
-const COLUNAS = 'id, nome, valor_referencia, duracao_dias, status';
+const COLUNAS = 'id, nome, valor_referencia, duracao_dias, cor, status';
 const NOME_REPETIDO = 'Já existe um plano com esse nome.';
 
 // RF04. Toda consulta filtra pela organização do token (multi-tenant):
@@ -43,10 +45,16 @@ export class PlanosService {
   async criar(organizacaoId: string, dados: SalvarPlanoDto): Promise<Plano> {
     const [linha] = await comUnico(NOME_REPETIDO, () =>
       this.banco.consultar<LinhaPlano>(
-        `INSERT INTO plano_associacao (organizacao_id, nome, valor_referencia, duracao_dias)
-         VALUES ($1, $2, $3, $4)
+        `INSERT INTO plano_associacao (organizacao_id, nome, valor_referencia, duracao_dias, cor)
+         VALUES ($1, $2, $3, $4, $5)
          RETURNING ${COLUNAS}`,
-        [organizacaoId, dados.nome, dados.valorReferencia, dados.duracaoDias],
+        [
+          organizacaoId,
+          dados.nome,
+          dados.valorReferencia,
+          dados.duracaoDias,
+          dados.cor ?? null,
+        ],
       ),
     );
     return paraPlano(linha);
@@ -70,7 +78,7 @@ export class PlanosService {
       this.banco.transacao(async (consultar) => {
         const linhas = await consultar<LinhaPlano>(
           `UPDATE plano_associacao
-           SET nome = $3, valor_referencia = $4, duracao_dias = $5
+           SET nome = $3, valor_referencia = $4, duracao_dias = $5, cor = $6
            WHERE organizacao_id = $1 AND id = $2
            RETURNING ${COLUNAS}`,
           [
@@ -79,6 +87,7 @@ export class PlanosService {
             dados.nome,
             dados.valorReferencia,
             dados.duracaoDias,
+            dados.cor ?? null,
           ],
         );
         const mudancas = descreverMudancas(antes, paraPlano(linhas[0]));
@@ -120,6 +129,7 @@ function paraPlano(linha: LinhaPlano): Plano {
     // O pg devolve NUMERIC como texto para não perder precisão.
     valorReferencia: Number(linha.valor_referencia),
     duracaoDias: linha.duracao_dias,
+    cor: linha.cor,
     status: linha.status,
   };
 }
@@ -135,6 +145,9 @@ function descreverMudancas(antes: Plano, depois: Plano) {
     mudancas.push(
       `valor ${reais(antes.valorReferencia)} → ${reais(depois.valorReferencia)}`,
     );
+  }
+  if (antes.cor !== depois.cor) {
+    mudancas.push(`cor ${antes.cor ?? 'padrão'} → ${depois.cor ?? 'padrão'}`);
   }
   if (antes.duracaoDias !== depois.duracaoDias) {
     mudancas.push(`duração ${antes.duracaoDias} → ${depois.duracaoDias} dias`);

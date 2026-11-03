@@ -5,7 +5,7 @@ import '../domain/planos_repositorio.dart';
 /// Planos em memória, para os testes rodarem sem a API.
 class PlanosRepositorioMock implements PlanosRepositorio {
   final _planos = <Plano>[
-    const Plano(id: 'p1', nome: 'Mensal', valorReferencia: 89.9, duracaoDias: 30, ativo: true),
+    const Plano(id: 'p1', nome: 'Mensal', valorReferencia: 89.9, duracaoDias: 30, ativo: true, cor: '#3A9FE0'),
     const Plano(id: 'p2', nome: 'Anual', valorReferencia: 899, duracaoDias: 365, ativo: true),
   ];
   var _proximoId = 3;
@@ -22,6 +22,7 @@ class PlanosRepositorioMock implements PlanosRepositorio {
       valorReferencia: dados.valorReferencia,
       duracaoDias: dados.duracaoDias,
       ativo: true,
+      cor: dados.cor,
     );
     _planos.add(plano);
     return plano;
@@ -36,6 +37,7 @@ class PlanosRepositorioMock implements PlanosRepositorio {
         nome: dados.nome,
         valorReferencia: dados.valorReferencia,
         duracaoDias: dados.duracaoDias,
+        cor: () => dados.cor,
       ),
     );
   }
@@ -51,9 +53,7 @@ class PlanosRepositorioMock implements PlanosRepositorio {
   }
 
   void _exigirNomeUnico(String nome, {String? ignorarId}) {
-    final repetido = _planos.any(
-      (p) => p.id != ignorarId && p.nome.toLowerCase() == nome.trim().toLowerCase(),
-    );
+    final repetido = _planos.any((p) => p.id != ignorarId && p.nome.toLowerCase() == nome.trim().toLowerCase());
     if (repetido) throw const ErroApi(409, 'Já existe um plano com esse nome.');
   }
 }

@@ -17,7 +17,7 @@ class MembrosRepositorioMock implements MembrosRepositorio {
   }
 
   static const senhaProvisoria = 'Prov1234';
-  static const _planos = {'p1': ('Mensal', 30), 'p2': ('Anual', 365)};
+  static const _planos = {'p1': ('Mensal', 30, '#3A9FE0'), 'p2': ('Anual', 365, null)};
 
   final DateTime _hoje;
   final _membros = <Membro>[];
@@ -35,8 +35,14 @@ class MembrosRepositorioMock implements MembrosRepositorio {
   @override
   Future<MembroCriado> criar(DadosMembro dados) async {
     _exigirEmailUnico(dados.email);
-    final membro = _novo('m${_proximoId++}', dados.nome, dados.email, dados.planoId,
-        vence: _planos[dados.planoId]!.$2, telefone: dados.telefone);
+    final membro = _novo(
+      'm${_proximoId++}',
+      dados.nome,
+      dados.email,
+      dados.planoId,
+      vence: _planos[dados.planoId]!.$2,
+      telefone: dados.telefone,
+    );
     _membros.add(membro);
     return MembroCriado(membro, senhaProvisoria);
   }
@@ -45,7 +51,7 @@ class MembrosRepositorioMock implements MembrosRepositorio {
   Future<Membro> editar(String id, DadosMembro dados) async {
     _exigirEmailUnico(dados.email, ignorarId: id);
     final m = _membros[_indice(id)];
-    final (planoNome, duracao) = _planos[dados.planoId]!;
+    final (planoNome, duracao, planoCor) = _planos[dados.planoId]!;
     return _membros[_indice(id)] = Membro(
       id: m.id,
       nome: dados.nome,
@@ -54,6 +60,7 @@ class MembrosRepositorioMock implements MembrosRepositorio {
       planoId: dados.planoId,
       planoNome: planoNome,
       planoDuracaoDias: duracao,
+      planoCor: planoCor,
       dataAdesao: m.dataAdesao,
       ativo: m.ativo,
       carteirinha: m.carteirinha,
@@ -69,8 +76,12 @@ class MembrosRepositorioMock implements MembrosRepositorio {
         carteirinha: _carteirinha(m, status: ativo ? StatusCarteirinha.ativa : StatusCarteirinha.invalidada),
       ),
     );
-    _registrar(id, ativo ? AcaoAuditoria.reativacaoMembro : AcaoAuditoria.desativacaoMembro,
-        'Cadastro de ${membro.nome} ${ativo ? 'reativado' : 'desativado'}.', justificativa);
+    _registrar(
+      id,
+      ativo ? AcaoAuditoria.reativacaoMembro : AcaoAuditoria.desativacaoMembro,
+      'Cadastro de ${membro.nome} ${ativo ? 'reativado' : 'desativado'}.',
+      justificativa,
+    );
     return membro;
   }
 
@@ -102,30 +113,29 @@ class MembrosRepositorioMock implements MembrosRepositorio {
   }
 
   @override
-  Future<List<RegistroAuditoria>> historico(String id) async =>
-      [for (final (membroId, registro) in auditoria) if (membroId == id) registro];
+  Future<List<RegistroAuditoria>> historico(String id) async => [
+    for (final (membroId, registro) in auditoria)
+      if (membroId == id) registro,
+  ];
 
   static Carteirinha _carteirinha(Membro m, {required StatusCarteirinha status, DateTime? vencimento}) => Carteirinha(
-        status: status,
-        dataVencimento: vencimento ?? m.carteirinha.dataVencimento,
-        qrVersao: m.carteirinha.qrVersao + 1,
-      );
+    status: status,
+    dataVencimento: vencimento ?? m.carteirinha.dataVencimento,
+    qrVersao: m.carteirinha.qrVersao + 1,
+  );
 
   void _registrar(String membroId, AcaoAuditoria acao, String descricao, String? justificativa) {
-    auditoria.insert(
-      0,
-      (
-        membroId,
-        RegistroAuditoria(
-          id: 'a${auditoria.length + 1}',
-          acao: acao,
-          descricao: descricao,
-          justificativa: justificativa,
-          administradorNome: 'Ana Administradora',
-          dataHora: DateTime.now(),
-        ),
+    auditoria.insert(0, (
+      membroId,
+      RegistroAuditoria(
+        id: 'a${auditoria.length + 1}',
+        acao: acao,
+        descricao: descricao,
+        justificativa: justificativa,
+        administradorNome: 'Ana Administradora',
+        dataHora: DateTime.now(),
       ),
-    );
+    ));
   }
 
   Membro _alterar(String id, Membro Function(Membro) alteracao) {
@@ -146,7 +156,7 @@ class MembrosRepositorioMock implements MembrosRepositorio {
   }
 
   Membro _novo(String id, String nome, String email, String planoId, {required int vence, String? telefone}) {
-    final (planoNome, duracao) = _planos[planoId]!;
+    final (planoNome, duracao, planoCor) = _planos[planoId]!;
     return Membro(
       id: id,
       nome: nome,
@@ -155,6 +165,7 @@ class MembrosRepositorioMock implements MembrosRepositorio {
       planoId: planoId,
       planoNome: planoNome,
       planoDuracaoDias: duracao,
+      planoCor: planoCor,
       dataAdesao: _hoje.subtract(const Duration(days: 30)),
       ativo: true,
       carteirinha: Carteirinha(

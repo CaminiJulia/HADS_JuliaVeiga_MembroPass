@@ -9,6 +9,7 @@ import '../domain/membro.dart';
 import '../domain/membros_repositorio.dart';
 import 'tela_detalhe_membro.dart';
 import 'tela_formulario_membro.dart';
+import '../../planos/presentation/cor_plano.dart';
 import 'widgets/visual_membro.dart';
 
 /// Filtros da lista de membros. Cada um reúne uma ou mais situações.
@@ -363,14 +364,22 @@ class _CartaoMembro extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                                 style: texto.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                desativado
-                                    ? 'Plano ${membro.planoNome}'
-                                    : '${membro.planoNome} · ${dias < 0 ? 'venceu' : 'vence'} '
-                                          '${Datas.formatar(membro.carteirinha.dataVencimento)}',
-                                overflow: TextOverflow.ellipsis,
-                                style: texto.bodySmall,
+                              const SizedBox(height: 3),
+                              Row(
+                                children: [
+                                  PontoCorPlano(membro.planoCor),
+                                  const SizedBox(width: 6),
+                                  Flexible(
+                                    child: Text(
+                                      desativado
+                                          ? 'Plano ${membro.planoNome}'
+                                          : '${membro.planoNome} · ${dias < 0 ? 'venceu' : 'vence'} '
+                                                '${Datas.formatar(membro.carteirinha.dataVencimento)}',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: texto.bodySmall,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),

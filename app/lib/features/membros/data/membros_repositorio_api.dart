@@ -30,16 +30,12 @@ class MembrosRepositorioApi implements MembrosRepositorio {
 
   @override
   Future<Membro> alterarAtivo(String id, {required bool ativo, String? justificativa}) async => _membro(
-        await _api.patch('/membros/$id/status', {
-          'status': ativo ? 'ATIVO' : 'DESATIVADO',
-          'justificativa': justificativa,
-        }),
-      );
+    await _api.patch('/membros/$id/status', {'status': ativo ? 'ATIVO' : 'DESATIVADO', 'justificativa': justificativa}),
+  );
 
   @override
-  Future<Membro> confirmarPagamento(String id, DateTime dataPagamento) async => _membro(
-        await _api.post('/membros/$id/liberar-ciclo', {'dataPagamento': Datas.paraApi(dataPagamento)}),
-      );
+  Future<Membro> confirmarPagamento(String id, DateTime dataPagamento) async =>
+      _membro(await _api.post('/membros/$id/liberar-ciclo', {'dataPagamento': Datas.paraApi(dataPagamento)}));
 
   @override
   Future<Membro> bloquear(String id, String justificativa) async =>

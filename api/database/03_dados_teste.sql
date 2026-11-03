@@ -12,10 +12,10 @@ INSERT INTO operador (organizacao_id, nome, email, senha_hash) VALUES
     ('00000000-0000-0000-0000-000000000001', 'Otávio Operador', 'operador@membropass.dev',
      '$2b$10$swt93Y0d1fTr4hvjd3wBQOuZTq9fKiOwJjl4/TSXpC.xVg3yFcIW2');
 
-INSERT INTO plano_associacao (organizacao_id, nome, valor_referencia, duracao_dias) VALUES
-    ('00000000-0000-0000-0000-000000000001', 'Mensal', 89.90, 30),
-    ('00000000-0000-0000-0000-000000000001', 'Trimestral', 239.90, 90),
-    ('00000000-0000-0000-0000-000000000001', 'Anual', 899.00, 365);
+INSERT INTO plano_associacao (organizacao_id, nome, valor_referencia, duracao_dias, cor) VALUES
+    ('00000000-0000-0000-0000-000000000001', 'Mensal', 89.90, 30, '#3A9FE0'),
+    ('00000000-0000-0000-0000-000000000001', 'Trimestral', 239.90, 90, '#9C6ADE'),
+    ('00000000-0000-0000-0000-000000000001', 'Anual', 899.00, 365, '#E0A030');
 
 INSERT INTO beneficio (id, organizacao_id, nome, descricao, parceiro, tipo_desconto, valor_desconto, vig_inicio, vig_fim) VALUES
     ('00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-000000000001',
