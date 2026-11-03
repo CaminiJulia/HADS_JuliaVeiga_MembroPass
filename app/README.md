@@ -9,14 +9,21 @@ Como executar: veja o [README principal](../README.md#-como-executar).
 lib/
 ├── core/
 │   ├── api/          # cliente HTTP da API (guarda e envia o token)
-│   ├── formatacao/   # valores em reais
-│   ├── tema/         # cores e tema da marca
-│   └── validacao/    # validadores de formulário
-└── features/
-    ├── auth/         # boas-vindas, login e recuperação de senha
-    ├── painel_admin/ # tela inicial do administrador
-    ├── planos/       # RF04
-    └── areas/        # telas provisórias do operador e do membro
+│   ├── formatacao/   # valores em reais e datas
+│   ├── tema/         # cores, tema e cálculo de contraste
+│   ├── validacao/    # validadores de formulário
+│   └── widgets/      # componentes comuns (avisos, selos, cartões, campo de data)
+├── features/
+│   ├── auth/         # boas-vindas, login e recuperação de senha
+│   ├── painel_admin/ # tela inicial do administrador e contato do suporte
+│   ├── planos/       # RF04
+│   ├── beneficios/   # RF08
+│   ├── membros/      # RF05, RF06 e RF07 (ciclos e bloqueios)
+│   ├── auditoria/    # RF16
+│   ├── unidades/     # RF11
+│   ├── identidade/   # RF17
+│   └── areas/        # telas provisórias do operador e do membro
+└── repositorios.dart # liga cada tela à API (ou às versões simuladas nos testes)
 ```
 
 Cada funcionalidade separa `domain/` (modelos e contratos), `data/` (implementação pela API e versão
@@ -29,3 +36,4 @@ flutter test
 ```
 
 Os testes usam os repositórios simulados (`*_mock.dart`), então não precisam da API rodando.
+O helper `test/ajuda.dart` entra como administrador e abre uma seção do painel.
