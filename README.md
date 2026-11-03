@@ -37,13 +37,15 @@ bloqueia nem libera de forma automática.
 | Etapa | Requisitos | Situação |
 |---|---|---|
 | Boas-vindas, login e encaminhamento por papel | RF01, RF02 | ✅ App e API, com bloqueio após 5 tentativas |
-| Painel do administrador | RF02 | ✅ Atalhos para as seções (as próximas aparecem como "Em breve") |
+| Painel do administrador | RF02, RF18 | ✅ Atalhos para todas as seções e contato do suporte |
 | Planos de associação | RF04 | ✅ Listar, criar, editar, desativar e reativar |
-| Membros e carteirinha | RF05, RF06 | ⬜ A fazer |
-| Liberação de ciclo, bloqueio e auditoria | RF07, RF16 | ⬜ A fazer |
-| Benefícios | RF08, RF09 | ⬜ A fazer |
-| Unidades, eventos e check-in | RF10, RF11 | ⬜ A fazer |
-| Identidade visual e suporte | RF17, RF18 | ⬜ A fazer |
+| Membros e carteirinha | RF05, RF06 | ✅ Cadastro com senha provisória; carteirinha emitida por trigger |
+| Liberação de ciclo, bloqueio e auditoria | RF07, RF16 | ✅ Pagamento confirmado manualmente; auditoria imutável |
+| Benefícios | RF08 | ✅ Com vigência e planos com direito |
+| Unidades e eventos | RF11 | ✅ Com período (eventos) e planos aceitos |
+| Identidade visual | RF17 | ✅ Logo, cor com verificação de contraste e prévia |
+| Área do membro (carteirinha com QR e benefícios) | RF05, RF09 | ⬜ A fazer |
+| Check-in pelo operador | RF10 | ⬜ A fazer |
 
 ## 🏗️ Arquitetura
 
@@ -76,7 +78,7 @@ flowchart LR
 HADS_JuliaVeiga_MembroPass/
 ├── app/            # Aplicativo Flutter (membro, operador e administrador)
 └── api/            # API REST em NestJS
-    └── database/   # Scripts SQL: criação das tabelas e dados de teste
+    └── database/   # Scripts SQL: tabelas, regras de negócio (triggers e funções) e dados de teste
 ```
 
 ## 🚀 Como executar
@@ -125,6 +127,9 @@ Senha `Senha@123` para todas (organização **Clube Exemplo**):
 | Administrador da organização | `admin@membropass.dev` |
 | Operador | `operador@membropass.dev` |
 | Membro | `membro@membropass.dev` |
+
+Os dados de teste também trazem membros em situações diferentes (em dia, vencendo em breve e vencido),
+três planos, dois benefícios, uma unidade e um evento.
 
 ### Testes automatizados
 
