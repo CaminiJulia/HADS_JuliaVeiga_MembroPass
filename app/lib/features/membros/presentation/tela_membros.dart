@@ -83,18 +83,16 @@ class _TelaMembrosState extends State<TelaMembros> {
   }
 
   Future<void> _novoMembro() async {
-    final criado = await Navigator.of(context).push<MembroCriado>(
-      MaterialPageRoute(builder: (_) => const TelaFormularioMembro()),
-    );
+    final criado = await Navigator.of(
+      context,
+    ).push<MembroCriado>(MaterialPageRoute(builder: (_) => const TelaFormularioMembro()));
     if (criado == null || !mounted) return;
     await _carregar();
     if (mounted) await mostrarSenhaProvisoria(context, criado);
   }
 
   Future<void> _abrirDetalhe(Membro membro) async {
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute(builder: (_) => TelaDetalheMembro(membroId: membro.id)),
-    );
+    await Navigator.of(context).push<void>(MaterialPageRoute(builder: (_) => TelaDetalheMembro(membroId: membro.id)));
     if (mounted) await _carregar();
   }
 
@@ -172,21 +170,29 @@ class _TelaMembrosState extends State<TelaMembros> {
             ),
             SizedBox(
               height: 56,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-                children: [
-                  for (final f in FiltroMembros.values)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: _ChipFiltro(
-                        filtro: f,
-                        quantidade: contar(f),
-                        selecionado: f == _filtro,
-                        aoTocar: () => setState(() => _filtro = f),
+              // Esmaece a borda direita para indicar que a faixa rola para o lado.
+              child: ShaderMask(
+                blendMode: BlendMode.dstIn,
+                shaderCallback: (r) => const LinearGradient(
+                  colors: [Colors.white, Colors.white, Colors.transparent],
+                  stops: [0, 0.88, 1],
+                ).createShader(r),
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+                  children: [
+                    for (final f in FiltroMembros.values)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: _ChipFiltro(
+                          filtro: f,
+                          quantidade: contar(f),
+                          selecionado: f == _filtro,
+                          aoTocar: () => setState(() => _filtro = f),
+                        ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
             Expanded(
@@ -209,17 +215,18 @@ class _TelaMembrosState extends State<TelaMembros> {
                         padding: EdgeInsets.only(top: 24),
                         child: AvisoTela(icone: Icons.search_off, texto: 'Nenhum membro encontrado com esses filtros.'),
                       )
-                    else
-                      CartaoItem(
-                        child: Column(
-                          children: [
-                            for (final (i, m) in visiveis.indexed) ...[
-                              if (i > 0) const Divider(indent: 72),
-                              _LinhaMembro(membro: m, hoje: hoje, aoTocar: () => _abrirDetalhe(m)),
-                            ],
-                          ],
+                    else ...[
+                      for (final m in visiveis)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: _CartaoMembro(membro: m, hoje: hoje, aoTocar: () => _abrirDetalhe(m)),
                         ),
+                      const SizedBox(height: 14),
+                      const CaixaInfo(
+                        'Toque em um membro para confirmar pagamento, bloquear a carteirinha '
+                        'ou editar os dados.',
                       ),
+                    ],
                   ],
                 ),
               ),
@@ -312,8 +319,10 @@ class _ChipFiltro extends StatelessWidget {
   }
 }
 
-class _LinhaMembro extends StatelessWidget {
-  const _LinhaMembro({required this.membro, required this.hoje, required this.aoTocar});
+/// Cartão do membro: faixa lateral na cor da situação, avatar, plano,
+/// vencimento e uma barra com o andamento do ciclo atual.
+class _CartaoMembro extends StatelessWidget {
+  const _CartaoMembro({required this.membro, required this.hoje, required this.aoTocar});
 
   final Membro membro;
   final DateTime hoje;
@@ -323,53 +332,111 @@ class _LinhaMembro extends StatelessWidget {
   Widget build(BuildContext context) {
     final texto = Theme.of(context).textTheme;
     final situacao = membro.situacao(hoje);
+    final cor = corDaSituacao(situacao);
     final desativado = situacao == SituacaoMembro.desativado;
+    final dias = membro.diasParaVencer(hoje);
 
-    return InkWell(
-      onTap: aoTocar,
-      child: Opacity(
-        opacity: desativado ? 0.6 : 1,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
-          child: Row(
-            children: [
-              AvatarMembro(membro, raio: 20),
-              const SizedBox(width: 16),
-              Expanded(
+    return CartaoItem(
+      aoTocar: aoTocar,
+      esmaecido: desativado,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(width: 4, color: cor),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      membro.nome,
-                      overflow: TextOverflow.ellipsis,
-                      style: texto.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                    Row(
+                      children: [
+                        AvatarMembro(membro, raio: 21),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                membro.nome,
+                                overflow: TextOverflow.ellipsis,
+                                style: texto.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                desativado
+                                    ? 'Plano ${membro.planoNome}'
+                                    : '${membro.planoNome} · ${dias < 0 ? 'venceu' : 'vence'} '
+                                          '${Datas.formatar(membro.carteirinha.dataVencimento)}',
+                                overflow: TextOverflow.ellipsis,
+                                style: texto.bodySmall,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        SeloSituacao(situacao),
+                      ],
                     ),
-                    const SizedBox(height: 2),
-                    Text('Plano ${membro.planoNome}', overflow: TextOverflow.ellipsis, style: texto.bodySmall),
+                    if (!desativado) ...[const SizedBox(height: 12), _BarraCiclo(membro: membro, dias: dias, cor: cor)],
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              // Situação e data à direita, alinhadas: o selo diz se venceu, a data diz quando.
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  SeloSituacao(situacao),
-                  if (!desativado) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      Datas.formatar(membro.carteirinha.dataVencimento),
-                      style: texto.bodySmall?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-                    ),
-                  ],
-                ],
-              ),
-              const SizedBox(width: 4),
-              const Icon(Icons.chevron_right, color: Cores.textoSecundario, size: 20),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+}
+
+/// Quanto do ciclo já passou, com o tempo restante (ou em atraso) ao lado.
+class _BarraCiclo extends StatelessWidget {
+  const _BarraCiclo({required this.membro, required this.dias, required this.cor});
+
+  final Membro membro;
+  final int dias;
+  final Color cor;
+
+  @override
+  Widget build(BuildContext context) {
+    final duracao = membro.planoDuracaoDias;
+    final decorrido = dias < 0 ? 1.0 : (1 - dias / duracao).clamp(0.0, 1.0);
+    final legenda = switch (dias) {
+      0 => 'vence hoje',
+      1 => '1 dia',
+      > 1 => '$dias dias',
+      -1 => 'há 1 dia',
+      _ => 'há ${-dias} dias',
+    };
+
+    return Row(
+      children: [
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: decorrido,
+              minHeight: 6,
+              color: cor,
+              backgroundColor: Cores.borda,
+              semanticsLabel: 'Andamento do ciclo',
+              // O leitor de tela lê a porcentagem; a legenda ao lado diz os dias.
+              semanticsValue: '${(decorrido * 100).round()}',
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        SizedBox(
+          width: 76,
+          child: Text(
+            legenda,
+            textAlign: TextAlign.right,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(color: cor, fontWeight: FontWeight.w700),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -386,7 +453,9 @@ Future<void> mostrarSenhaProvisoria(BuildContext context, MembroCriado criado) {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('A carteirinha já foi emitida. Repasse ao membro o e-mail e a senha provisória para o primeiro acesso:'),
+          const Text(
+            'A carteirinha já foi emitida. Repasse ao membro o e-mail e a senha provisória para o primeiro acesso:',
+          ),
           const SizedBox(height: 16),
           SelectableText(criado.membro.email, textAlign: TextAlign.center),
           const SizedBox(height: 8),
