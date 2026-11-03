@@ -5,6 +5,7 @@ CREATE TYPE status_organizacao AS ENUM ('EM_HABILITACAO', 'HABILITADA', 'SUSPENS
 CREATE TYPE status_cadastro AS ENUM ('ATIVO', 'INATIVO');
 CREATE TYPE status_membro AS ENUM ('ATIVO', 'DESATIVADO', 'CANCELADO');
 CREATE TYPE tipo_desconto AS ENUM ('PERCENTUAL', 'VALOR');
+CREATE TYPE status_carteirinha AS ENUM ('ATIVA', 'BLOQUEADA', 'INVALIDADA');
 
 CREATE TABLE organizacao (
     id      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -31,16 +32,6 @@ CREATE TABLE operador (
     status          status_cadastro NOT NULL DEFAULT 'ATIVO'
 );
 
-CREATE TABLE membro (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    organizacao_id  UUID NOT NULL REFERENCES organizacao (id),
-    nome            VARCHAR(150) NOT NULL,
-    email           VARCHAR(255) NOT NULL,
-    senha_hash      VARCHAR(255) NOT NULL,
-    data_adesao     DATE NOT NULL DEFAULT CURRENT_DATE,
-    status          status_membro NOT NULL DEFAULT 'ATIVO'
-);
-
 -- RF04: planos de associação. Desativar um plano não afeta os membros já vinculados.
 CREATE TABLE plano_associacao (
     id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -53,6 +44,30 @@ CREATE TABLE plano_associacao (
 
 -- Nome do plano único dentro da organização.
 CREATE UNIQUE INDEX plano_associacao_nome_un ON plano_associacao (organizacao_id, lower(nome));
+
+-- RF06: membros da organização. Todo membro pertence a um plano.
+CREATE TABLE membro (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organizacao_id  UUID NOT NULL REFERENCES organizacao (id),
+    nome            VARCHAR(150) NOT NULL,
+    email           VARCHAR(255) NOT NULL,
+    senha_hash      VARCHAR(255) NOT NULL,
+    telefone        VARCHAR(20),
+    plano_id        UUID NOT NULL REFERENCES plano_associacao (id),
+    data_adesao     DATE NOT NULL DEFAULT CURRENT_DATE,
+    status          status_membro NOT NULL DEFAULT 'ATIVO'
+);
+
+-- RF05: carteirinha digital, uma por membro. A versão do QR muda a cada
+-- liberação ou bloqueio, invalidando QR Codes antigos.
+CREATE TABLE carteirinha (
+    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    membro_id        UUID NOT NULL UNIQUE REFERENCES membro (id),
+    qr_versao        INTEGER NOT NULL DEFAULT 1,
+    data_emissao     DATE NOT NULL DEFAULT CURRENT_DATE,
+    data_vencimento  DATE NOT NULL,
+    status           status_carteirinha NOT NULL DEFAULT 'ATIVA'
+);
 
 -- RF08: benefícios oferecidos pela organização, com vigência opcional.
 CREATE TABLE beneficio (

@@ -13,4 +13,9 @@ abstract final class Cores {
 
   static const erro = Color(0xFFC62828);
   static const erroFundo = Color(0xFFFDECEC);
+
+  static const sucesso = Color(0xFF1B7F4B);
+  static const sucessoFundo = Color(0xFFE3F5EA);
+  static const alerta = Color(0xFF9A5B00);
+  static const alertaFundo = Color(0xFFFFF1D6);
 }

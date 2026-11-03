@@ -9,6 +9,7 @@ abstract final class Rotas {
   static const areaMembro = '/membro';
   static const planos = '/administrador/planos';
   static const beneficios = '/administrador/beneficios';
+  static const membros = '/administrador/membros';
 
   /// Área inicial de cada papel após o login (RF01).
   static String inicialDo(Papel papel) => switch (papel) {

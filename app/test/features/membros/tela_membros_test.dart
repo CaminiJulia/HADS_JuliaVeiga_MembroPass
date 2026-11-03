@@ -1,0 +1,120 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:membropass/features/membros/data/membros_repositorio_mock.dart';
+import 'package:membropass/features/membros/domain/membro.dart';
+
+import '../../ajuda.dart';
+
+void main() {
+  Future<void> abrirMembros(WidgetTester tester) => entrarComoAdmin(tester, secao: 'Membros');
+
+  testWidgets('lista membros com a situação de cada um', (tester) async {
+    await abrirMembros(tester);
+
+    expect(find.text('Marina Membro'), findsOneWidget);
+    expect(find.text('Em dia'), findsOneWidget);
+    expect(find.text('Vence em breve'), findsOneWidget);
+    expect(find.text('Vencido'), findsOneWidget);
+  });
+
+  testWidgets('busca e filtra por situação', (tester) async {
+    await abrirMembros(tester);
+
+    await tester.enterText(find.byKey(const Key('campo-busca-membro')), 'bru');
+    await tester.pump();
+    expect(find.text('Bruno Souza'), findsOneWidget);
+    expect(find.text('Marina Membro'), findsNothing);
+
+    await tester.enterText(find.byKey(const Key('campo-busca-membro')), '');
+    await tester.tap(find.text('Vencido (1)'));
+    await tester.pump();
+    expect(find.text('Carla Dias'), findsOneWidget);
+    expect(find.text('Bruno Souza'), findsNothing);
+  });
+
+  testWidgets('cadastra membro e mostra a senha provisória', (tester) async {
+    await abrirMembros(tester);
+    await tester.tap(find.text('Novo membro'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byKey(const Key('campo-nome-membro')), 'Eva Nunes');
+    await tester.enterText(find.byKey(const Key('campo-email-membro')), 'Eva@Exemplo.com');
+    await tester.tap(find.byKey(const Key('campo-plano-membro')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Anual').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('botao-salvar-membro')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Eva Nunes foi cadastrado'), findsOneWidget);
+    expect(find.text(MembrosRepositorioMock.senhaProvisoria), findsOneWidget);
+    await tester.tap(find.text('Pronto'));
+    await tester.pumpAndSettle();
+    expect(find.text('Eva Nunes'), findsOneWidget);
+  });
+
+  testWidgets('não deixa repetir e-mail', (tester) async {
+    await abrirMembros(tester);
+    await tester.tap(find.text('Novo membro'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byKey(const Key('campo-nome-membro')), 'Outra');
+    await tester.enterText(find.byKey(const Key('campo-email-membro')), 'bruno@exemplo.com');
+    await tester.tap(find.byKey(const Key('campo-plano-membro')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Mensal').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('botao-salvar-membro')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Este e-mail já está em uso por outra conta.'), findsOneWidget);
+  });
+
+  testWidgets('desativa pelo detalhe, com confirmação', (tester) async {
+    await abrirMembros(tester);
+    await tester.tap(find.text('Marina Membro'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('membro@membropass.dev'), findsOneWidget);
+    await tester.tap(find.text('Desativar membro'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Desativar'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Carteirinha invalidada'), findsOneWidget);
+    expect(find.text('Reativar membro'), findsOneWidget);
+  });
+
+  group('Membro.situacao', () {
+    final hoje = DateTime(2026, 6, 15);
+    Membro membro({int venceEm = 30, bool ativo = true, StatusCarteirinha status = StatusCarteirinha.ativa}) =>
+        Membro(
+          id: 'x',
+          nome: 'Ana Maria Souza',
+          email: 'a@b.com',
+          planoId: 'p',
+          planoNome: 'Mensal',
+          dataAdesao: hoje,
+          ativo: ativo,
+          carteirinha: Carteirinha(status: status, dataVencimento: hoje.add(Duration(days: venceEm)), qrVersao: 1),
+        );
+
+    test('em dia, vence em breve e vencido pelo vencimento', () {
+      expect(membro(venceEm: 8).situacao(hoje), SituacaoMembro.emDia);
+      expect(membro(venceEm: 7).situacao(hoje), SituacaoMembro.venceEmBreve);
+      expect(membro(venceEm: 0).situacao(hoje), SituacaoMembro.venceEmBreve);
+      expect(membro(venceEm: -1).situacao(hoje), SituacaoMembro.vencido);
+    });
+
+    test('desativado e bloqueado têm prioridade sobre o vencimento', () {
+      expect(membro(ativo: false, venceEm: -5).situacao(hoje), SituacaoMembro.desativado);
+      expect(membro(status: StatusCarteirinha.bloqueada).situacao(hoje), SituacaoMembro.bloqueado);
+    });
+
+    test('textos de vencimento e iniciais', () {
+      expect(membro(venceEm: 0).descricaoVencimento(hoje), 'Vence hoje (15/06/2026)');
+      expect(membro(venceEm: -10).descricaoVencimento(hoje), 'Venceu há 10 dias (05/06/2026)');
+      expect(membro().iniciais, 'AS');
+    });
+  });
+}
