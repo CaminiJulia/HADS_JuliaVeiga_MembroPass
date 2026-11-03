@@ -253,11 +253,7 @@ class _PreviaPlano extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         // A cor do plano escurecida o necessário para o texto branco continuar legível.
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: degradeDoPlano(cor),
-        ),
+        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: degradeDoPlano(cor)),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(

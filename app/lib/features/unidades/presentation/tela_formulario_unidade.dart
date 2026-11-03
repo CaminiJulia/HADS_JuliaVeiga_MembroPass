@@ -29,8 +29,12 @@ class _TelaFormularioUnidadeState extends State<TelaFormularioUnidade> {
   late DateTime? _fim = widget.local?.dataFim;
 
   /// Novo local já aceita todos os planos ativos; o administrador desmarca se quiser.
-  late final Set<String> _planoIds =
-      widget.local == null ? {for (final p in widget.planos) if (p.ativo) p.id} : {...widget.local!.planoIds};
+  late final Set<String> _planoIds = widget.local == null
+      ? {
+          for (final p in widget.planos)
+            if (p.ativo) p.id,
+        }
+      : {...widget.local!.planoIds};
 
   bool _salvando = false;
   String? _erro;
@@ -123,10 +127,7 @@ class _TelaFormularioUnidadeState extends State<TelaFormularioUnidade> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (_erro != null) ...[
-                      AvisoErro(mensagem: _erro!),
-                      const SizedBox(height: 16),
-                    ],
+                    if (_erro != null) ...[AvisoErro(mensagem: _erro!), const SizedBox(height: 16)],
                     SegmentedButton<TipoLocal>(
                       segments: const [
                         ButtonSegment(

@@ -2,6 +2,9 @@ import '../../../core/formatacao/datas.dart';
 
 enum TipoLocal { unidade, evento }
 
+/// Momento do evento em relação a hoje.
+enum SituacaoEvento { futuro, acontecendo, encerrado }
+
 /// Local fixo (unidade) ou evento com período, onde a carteirinha vale (RF11).
 class UnidadeEvento {
   const UnidadeEvento({
@@ -15,14 +18,14 @@ class UnidadeEvento {
   });
 
   factory UnidadeEvento.deJson(Map<String, dynamic> json) => UnidadeEvento(
-        id: json['id'] as String,
-        nome: json['nome'] as String,
-        tipo: json['tipo'] == 'EVENTO' ? TipoLocal.evento : TipoLocal.unidade,
-        localizacao: json['localizacao'] as String?,
-        dataInicio: Datas.daApi(json['dataInicio'] as String?),
-        dataFim: Datas.daApi(json['dataFim'] as String?),
-        planoIds: [for (final id in json['planoIds'] as List) id as String],
-      );
+    id: json['id'] as String,
+    nome: json['nome'] as String,
+    tipo: json['tipo'] == 'EVENTO' ? TipoLocal.evento : TipoLocal.unidade,
+    localizacao: json['localizacao'] as String?,
+    dataInicio: Datas.daApi(json['dataInicio'] as String?),
+    dataFim: Datas.daApi(json['dataFim'] as String?),
+    planoIds: [for (final id in json['planoIds'] as List) id as String],
+  );
 
   final String id;
   final String nome;
@@ -41,12 +44,17 @@ class UnidadeEvento {
   /// Evento cujo período já terminou.
   bool encerrado(DateTime hoje) => evento && dataFim != null && hoje.isAfter(dataFim!);
 
-  /// "01/12/2026", ou "01/12/2026 a 03/12/2026"
-  String? get periodo {
+  /// `null` para unidades (que não têm período).
+  SituacaoEvento? situacao(DateTime hoje) {
     if (!evento || dataInicio == null || dataFim == null) return null;
-    final inicio = Datas.formatar(dataInicio!);
-    return dataInicio == dataFim ? inicio : '$inicio a ${Datas.formatar(dataFim!)}';
+    if (hoje.isBefore(dataInicio!)) return SituacaoEvento.futuro;
+    if (hoje.isAfter(dataFim!)) return SituacaoEvento.encerrado;
+    return SituacaoEvento.acontecendo;
   }
+
+  /// Dias até o evento começar (0 se já começou).
+  int diasParaComecar(DateTime hoje) =>
+      dataInicio == null || !hoje.isBefore(dataInicio!) ? 0 : dataInicio!.difference(hoje).inDays;
 }
 
 /// Dados do formulário de criar ou editar uma unidade ou evento.
@@ -68,13 +76,13 @@ class DadosUnidadeEvento {
   final List<String> planoIds;
 
   Map<String, Object?> paraJson() => {
-        'nome': nome,
-        'tipo': tipo == TipoLocal.evento ? 'EVENTO' : 'UNIDADE',
-        'localizacao': localizacao,
-        'dataInicio': dataInicio == null ? null : Datas.paraApi(dataInicio!),
-        'dataFim': dataFim == null ? null : Datas.paraApi(dataFim!),
-        'planoIds': planoIds,
-      };
+    'nome': nome,
+    'tipo': tipo == TipoLocal.evento ? 'EVENTO' : 'UNIDADE',
+    'localizacao': localizacao,
+    'dataInicio': dataInicio == null ? null : Datas.paraApi(dataInicio!),
+    'dataFim': dataFim == null ? null : Datas.paraApi(dataFim!),
+    'planoIds': planoIds,
+  };
 }
 
 /// Unidades e eventos da organização (RF11).

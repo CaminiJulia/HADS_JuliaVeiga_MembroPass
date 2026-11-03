@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:membropass/core/formatacao/datas.dart';
 import 'package:membropass/features/unidades/domain/unidade_evento.dart';
 
 import '../../ajuda.dart';
@@ -12,7 +13,10 @@ void main() {
 
     expect(find.text('Sede Central'), findsOneWidget);
     expect(find.text('Rua das Flores, 100'), findsOneWidget);
-    expect(find.text('Aceita: Mensal, Anual'), findsOneWidget);
+    expect(find.text('UNIDADES · 1'), findsOneWidget);
+    // Etiquetas dos planos aceitos.
+    expect(find.text('Mensal'), findsOneWidget);
+    expect(find.text('Anual'), findsOneWidget);
   });
 
   testWidgets('cadastra unidade aceitando todos os planos ativos', (tester) async {
@@ -25,7 +29,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Filial Norte'), findsOneWidget);
-    expect(find.text('Aceita: Mensal, Anual'), findsNWidgets(2));
+    expect(find.text('UNIDADES · 2'), findsOneWidget);
+    expect(find.text('Mensal'), findsNWidgets(2));
   });
 
   testWidgets('evento exige período', (tester) async {
@@ -52,8 +57,18 @@ void main() {
       dataInicio: DateTime(2026, 12, 1),
       dataFim: DateTime(2026, 12, 3),
     );
-    expect(evento.periodo, '01/12/2026 a 03/12/2026');
     expect(evento.encerrado(DateTime(2026, 12, 3)), isFalse);
     expect(evento.encerrado(DateTime(2026, 12, 4)), isTrue);
+    expect(evento.situacao(DateTime(2026, 11, 21)), SituacaoEvento.futuro);
+    expect(evento.diasParaComecar(DateTime(2026, 11, 21)), 10);
+    expect(evento.situacao(DateTime(2026, 12, 2)), SituacaoEvento.acontecendo);
+    expect(evento.situacao(DateTime(2026, 12, 4)), SituacaoEvento.encerrado);
+  });
+
+  test('período por extenso', () {
+    expect(Datas.periodoPorExtenso(DateTime(2026, 11, 23), DateTime(2026, 11, 25)), '23 a 25 de novembro de 2026');
+    expect(Datas.periodoPorExtenso(DateTime(2026, 11, 30), DateTime(2026, 12, 2)), '30 de novembro a 2 de dezembro de 2026');
+    expect(Datas.periodoPorExtenso(DateTime(2026, 3, 5), DateTime(2026, 3, 5)), '5 de março de 2026');
+    expect(Datas.mesAbreviado(3), 'MAR');
   });
 }

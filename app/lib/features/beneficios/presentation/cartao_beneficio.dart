@@ -64,7 +64,7 @@ class CartaoBeneficio extends StatelessWidget {
                       style: texto.bodySmall?.copyWith(color: Cores.erro, fontWeight: FontWeight.w600),
                     )
                   else
-                    Wrap(spacing: 6, runSpacing: 6, children: [for (final p in planos) _EtiquetaPlano(p)]),
+                    Wrap(spacing: 6, runSpacing: 6, children: [for (final p in planos) EtiquetaPlano(p)]),
                 ],
               ),
             ),
@@ -157,33 +157,6 @@ class _Detalhe extends StatelessWidget {
           Icon(icone, size: 16, color: Cores.textoSecundario),
           const SizedBox(width: 6),
           Expanded(child: Text(texto, style: Theme.of(context).textTheme.bodySmall)),
-        ],
-      ),
-    );
-  }
-}
-
-/// Plano com direito ao benefício, com o ponto na cor do plano.
-class _EtiquetaPlano extends StatelessWidget {
-  const _EtiquetaPlano(this.plano);
-
-  final Plano plano;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: Cores.fundo,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Cores.borda),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          PontoCorPlano(plano.cor, tamanho: 7),
-          const SizedBox(width: 5),
-          Text(plano.nome, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Cores.tinta)),
         ],
       ),
     );

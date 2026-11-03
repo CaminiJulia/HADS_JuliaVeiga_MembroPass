@@ -3,6 +3,7 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 import '../../../core/tema/contraste.dart';
 import '../../../core/tema/cores.dart';
+import '../domain/plano.dart';
 
 /// Cores sugeridas para os planos: tons médios, que aparecem bem tanto como
 /// destaque no fundo escuro quanto escurecidos, com texto branco, na prévia.
@@ -252,13 +253,44 @@ class _Interior extends StatelessWidget {
     }
     if (icone != null) {
       return Container(
-        decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: cor!, width: 2)),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: cor!, width: 2),
+        ),
         child: Icon(icone, size: 14, color: cor),
       );
     }
     return Container(
       decoration: BoxDecoration(shape: BoxShape.circle, color: cor),
       child: marcada ? const Icon(Icons.check, size: 18, color: Colors.white) : null,
+    );
+  }
+}
+
+/// Etiqueta com o nome do plano e o ponto na cor dele, para listas de planos
+/// aceitos ou com direito.
+class EtiquetaPlano extends StatelessWidget {
+  const EtiquetaPlano(this.plano, {super.key});
+
+  final Plano plano;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: Cores.fundo,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Cores.borda),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          PontoCorPlano(plano.cor, tamanho: 7),
+          const SizedBox(width: 5),
+          Text(plano.nome, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Cores.tinta)),
+        ],
+      ),
     );
   }
 }
