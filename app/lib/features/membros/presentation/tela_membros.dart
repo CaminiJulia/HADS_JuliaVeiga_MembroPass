@@ -11,28 +11,65 @@ import 'tela_detalhe_membro.dart';
 import 'tela_formulario_membro.dart';
 import 'widgets/visual_membro.dart';
 
-/// RF06: membros da organização, com busca e filtro por situação.
+/// Filtros da lista de membros. Cada um reúne uma ou mais situações.
+enum FiltroMembros {
+  todos('Todos', {}),
+  atencao('Precisam de atenção', {SituacaoMembro.venceEmBreve, SituacaoMembro.vencido, SituacaoMembro.bloqueado}),
+  emDia('Em dia', {SituacaoMembro.emDia}),
+  venceEmBreve('Vence em breve', {SituacaoMembro.venceEmBreve}),
+  vencidos('Vencidos', {SituacaoMembro.vencido}),
+  bloqueados('Bloqueados', {SituacaoMembro.bloqueado}),
+  desativados('Desativados', {SituacaoMembro.desativado});
+
+  const FiltroMembros(this.rotulo, this.situacoes);
+
+  final String rotulo;
+
+  /// Vazio em [todos]: aceita qualquer situação.
+  final Set<SituacaoMembro> situacoes;
+
+  bool aceita(SituacaoMembro s) => situacoes.isEmpty || situacoes.contains(s);
+}
+
+enum _Ordem {
+  nome('Nome (A–Z)'),
+  vencimento('Vencimento (mais urgente)');
+
+  const _Ordem(this.rotulo);
+
+  final String rotulo;
+}
+
+/// RF06: membros da organização, com busca, filtro por situação e ordenação.
 /// Com [filtroInicial], abre já filtrada (ex.: a seção "Ciclos e bloqueios").
 class TelaMembros extends StatefulWidget {
-  const TelaMembros({super.key, this.titulo = 'Membros', this.filtroInicial});
+  const TelaMembros({super.key, this.titulo = 'Membros', this.filtroInicial = FiltroMembros.todos});
 
   final String titulo;
-  final Set<SituacaoMembro>? filtroInicial;
+  final FiltroMembros filtroInicial;
 
   @override
   State<TelaMembros> createState() => _TelaMembrosState();
 }
 
 class _TelaMembrosState extends State<TelaMembros> {
+  final _campoBusca = TextEditingController();
   List<Membro>? _membros;
   String? _erro;
-  String _busca = '';
-  late final Set<SituacaoMembro> _filtro = {...?widget.filtroInicial};
+  late var _filtro = widget.filtroInicial;
+  // Em "atenção", quem vence antes aparece primeiro.
+  late var _ordem = widget.filtroInicial == FiltroMembros.atencao ? _Ordem.vencimento : _Ordem.nome;
 
   @override
   void initState() {
     super.initState();
     _carregar();
+  }
+
+  @override
+  void dispose() {
+    _campoBusca.dispose();
+    super.dispose();
   }
 
   Future<void> _carregar() async {
@@ -61,20 +98,40 @@ class _TelaMembrosState extends State<TelaMembros> {
     if (mounted) await _carregar();
   }
 
-  List<Membro> _filtrados(List<Membro> membros, DateTime hoje) {
-    final termo = _busca.trim().toLowerCase();
-    return [
+  List<Membro> _visiveis(List<Membro> membros, DateTime hoje) {
+    final termo = _campoBusca.text.trim().toLowerCase();
+    final lista = [
       for (final m in membros)
         if ((termo.isEmpty || m.nome.toLowerCase().contains(termo) || m.email.contains(termo)) &&
-            (_filtro.isEmpty || _filtro.contains(m.situacao(hoje))))
+            _filtro.aceita(m.situacao(hoje)))
           m,
     ];
+    lista.sort(switch (_ordem) {
+      _Ordem.nome => (a, b) => a.nome.toLowerCase().compareTo(b.nome.toLowerCase()),
+      _Ordem.vencimento => (a, b) => a.carteirinha.dataVencimento.compareTo(b.carteirinha.dataVencimento),
+    });
+    return lista;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.titulo)),
+      appBar: AppBar(
+        title: Text(widget.titulo),
+        actions: [
+          PopupMenuButton<_Ordem>(
+            tooltip: 'Ordenar',
+            icon: const Icon(Icons.sort),
+            initialValue: _ordem,
+            onSelected: (o) => setState(() => _ordem = o),
+            itemBuilder: (_) => [
+              for (final o in _Ordem.values)
+                CheckedPopupMenuItem(value: o, checked: o == _ordem, child: Text(o.rotulo)),
+            ],
+          ),
+          const SizedBox(width: 4),
+        ],
+      ),
       floatingActionButton: _membros == null
           ? null
           : FloatingActionButton.extended(
@@ -98,72 +155,165 @@ class _TelaMembrosState extends State<TelaMembros> {
     }
 
     final hoje = Datas.hoje();
-    final filtrados = _filtrados(membros, hoje);
-    final contagem = <SituacaoMembro, int>{};
-    for (final m in membros) {
-      contagem.update(m.situacao(hoje), (n) => n + 1, ifAbsent: () => 1);
-    }
+    final visiveis = _visiveis(membros, hoje);
+    final situacoes = [for (final m in membros) m.situacao(hoje)];
+    int contar(FiltroMembros f) => situacoes.where(f.aceita).length;
+    final filtrando = _filtro != FiltroMembros.todos || _campoBusca.text.trim().isNotEmpty;
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-          child: TextField(
-            key: const Key('campo-busca-membro'),
-            decoration: const InputDecoration(
-              hintText: 'Buscar por nome ou e-mail',
-              prefixIcon: Icon(Icons.search),
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 760),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: _CampoBusca(controlador: _campoBusca, aoMudar: () => setState(() {})),
             ),
-            onChanged: (v) => setState(() => _busca = v),
-          ),
-        ),
-        SizedBox(
-          height: 48,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            children: [
-              for (final s in SituacaoMembro.values)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    label: Text('${s.rotulo} (${contagem[s] ?? 0})'),
-                    selected: _filtro.contains(s),
-                    onSelected: (marcado) => setState(() => marcado ? _filtro.add(s) : _filtro.remove(s)),
-                  ),
-                ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: _carregar,
-            child: filtrados.isEmpty
-                ? ListView(
-                    children: const [
-                      SizedBox(height: 48),
-                      AvisoTela(icone: Icons.search_off, texto: 'Nenhum membro encontrado com esses filtros.'),
-                    ],
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
-                    itemCount: filtrados.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 10),
-                    itemBuilder: (context, i) => _CartaoMembro(
-                      membro: filtrados[i],
-                      hoje: hoje,
-                      aoTocar: () => _abrirDetalhe(filtrados[i]),
+            SizedBox(
+              height: 56,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+                children: [
+                  for (final f in FiltroMembros.values)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: _ChipFiltro(
+                        filtro: f,
+                        quantidade: contar(f),
+                        selecionado: f == _filtro,
+                        aoTocar: () => setState(() => _filtro = f),
+                      ),
                     ),
-                  ),
-          ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: _carregar,
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(4, 4, 4, 10),
+                      child: Text(
+                        filtrando
+                            ? '${visiveis.length} de ${membros.length} membros'
+                            : '${membros.length} ${membros.length == 1 ? 'membro' : 'membros'}',
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Cores.textoSecundario),
+                      ),
+                    ),
+                    if (visiveis.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 24),
+                        child: AvisoTela(icone: Icons.search_off, texto: 'Nenhum membro encontrado com esses filtros.'),
+                      )
+                    else
+                      CartaoItem(
+                        child: Column(
+                          children: [
+                            for (final (i, m) in visiveis.indexed) ...[
+                              if (i > 0) const Divider(indent: 72),
+                              _LinhaMembro(membro: m, hoje: hoje, aoTocar: () => _abrirDetalhe(m)),
+                            ],
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
 
-class _CartaoMembro extends StatelessWidget {
-  const _CartaoMembro({required this.membro, required this.hoje, required this.aoTocar});
+class _CampoBusca extends StatelessWidget {
+  const _CampoBusca({required this.controlador, required this.aoMudar});
+
+  final TextEditingController controlador;
+  final VoidCallback aoMudar;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      key: const Key('campo-busca-membro'),
+      controller: controlador,
+      textInputAction: TextInputAction.search,
+      decoration: InputDecoration(
+        hintText: 'Buscar por nome ou e-mail',
+        prefixIcon: const Icon(Icons.search),
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+        suffixIcon: controlador.text.isEmpty
+            ? null
+            : IconButton(
+                tooltip: 'Limpar busca',
+                icon: const Icon(Icons.close),
+                onPressed: () {
+                  controlador.clear();
+                  aoMudar();
+                },
+              ),
+      ),
+      onChanged: (_) => aoMudar(),
+    );
+  }
+}
+
+/// Chip de filtro com o rótulo e um contador em destaque.
+class _ChipFiltro extends StatelessWidget {
+  const _ChipFiltro({required this.filtro, required this.quantidade, required this.selecionado, required this.aoTocar});
+
+  final FiltroMembros filtro;
+  final int quantidade;
+  final bool selecionado;
+  final VoidCallback aoTocar;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: '${filtro.rotulo}: $quantidade',
+      selected: selecionado,
+      button: true,
+      excludeSemantics: true,
+      child: ChoiceChip(
+        key: Key('filtro-${filtro.name}'),
+        showCheckmark: false,
+        selected: selecionado,
+        onSelected: (_) => aoTocar(),
+        label: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(filtro.rotulo),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+              decoration: BoxDecoration(
+                color: selecionado ? Cores.primaria : Cores.borda,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                '$quantidade',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: selecionado ? Cores.noPrimaria : Cores.tinta,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LinhaMembro extends StatelessWidget {
+  const _LinhaMembro({required this.membro, required this.hoje, required this.aoTocar});
 
   final Membro membro;
   final DateTime hoje;
@@ -173,39 +323,51 @@ class _CartaoMembro extends StatelessWidget {
   Widget build(BuildContext context) {
     final texto = Theme.of(context).textTheme;
     final situacao = membro.situacao(hoje);
+    final desativado = situacao == SituacaoMembro.desativado;
 
-    return CartaoItem(
-      aoTocar: aoTocar,
-      esmaecido: situacao == SituacaoMembro.desativado,
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          children: [
-            AvatarMembro(membro),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return InkWell(
+      onTap: aoTocar,
+      child: Opacity(
+        opacity: desativado ? 0.6 : 1,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+          child: Row(
+            children: [
+              AvatarMembro(membro, raio: 20),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      membro.nome,
+                      overflow: TextOverflow.ellipsis,
+                      style: texto.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 2),
+                    Text('Plano ${membro.planoNome}', overflow: TextOverflow.ellipsis, style: texto.bodySmall),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Situação e data à direita, alinhadas: o selo diz se venceu, a data diz quando.
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    membro.nome,
-                    overflow: TextOverflow.ellipsis,
-                    style: texto.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: Cores.tinta),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    situacao == SituacaoMembro.desativado
-                        ? membro.planoNome
-                        : '${membro.planoNome} · ${membro.vencimentoCurto(hoje)}',
-                    overflow: TextOverflow.ellipsis,
-                    style: texto.bodySmall?.copyWith(color: Cores.textoSecundario),
-                  ),
+                  SeloSituacao(situacao),
+                  if (!desativado) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      Datas.formatar(membro.carteirinha.dataVencimento),
+                      style: texto.bodySmall?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+                    ),
+                  ],
                 ],
               ),
-            ),
-            const SizedBox(width: 8),
-            SeloSituacao(situacao),
-          ],
+              const SizedBox(width: 4),
+              const Icon(Icons.chevron_right, color: Cores.textoSecundario, size: 20),
+            ],
+          ),
         ),
       ),
     );

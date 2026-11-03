@@ -13,7 +13,6 @@ import 'features/auth/presentation/tela_login.dart';
 import 'features/auth/presentation/tela_recuperar_senha.dart';
 import 'features/beneficios/presentation/tela_beneficios.dart';
 import 'features/identidade/presentation/tela_identidade.dart';
-import 'features/membros/domain/membro.dart';
 import 'features/membros/presentation/tela_membros.dart';
 import 'features/painel_admin/tela_painel_admin.dart';
 import 'features/planos/presentation/tela_planos.dart';
@@ -56,7 +55,7 @@ class MembroPassApp extends StatelessWidget {
           // RF07: os membros que pedem atenção do administrador.
           Rotas.ciclos: (_) => const TelaMembros(
                 titulo: 'Ciclos e bloqueios',
-                filtroInicial: {SituacaoMembro.venceEmBreve, SituacaoMembro.vencido, SituacaoMembro.bloqueado},
+                filtroInicial: FiltroMembros.atencao,
               ),
           Rotas.auditoria: (_) => const TelaAuditoria(),
           Rotas.unidades: (_) => const TelaUnidades(),

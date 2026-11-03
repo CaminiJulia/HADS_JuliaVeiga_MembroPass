@@ -99,14 +99,6 @@ class Membro {
     return 'Venceu há ${-dias} dias ($data)';
   }
 
-  /// Versão curta, para listas: "Vence hoje", "Vence em 07/11/2026", "Venceu em 24/10/2026".
-  String vencimentoCurto(DateTime hoje) {
-    final dias = diasParaVencer(hoje);
-    if (dias == 0) return 'Vence hoje';
-    final data = Datas.formatar(carteirinha.dataVencimento);
-    return dias > 0 ? 'Vence em $data' : 'Venceu em $data';
-  }
-
   /// Vencimento depois de confirmar um pagamento feito em [dataPagamento]:
   /// conta do vencimento atual ou do pagamento (o que for maior), mais a
   /// duração do plano. Mesma regra da função liberar_ciclo do banco.

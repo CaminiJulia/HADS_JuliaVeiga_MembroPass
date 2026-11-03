@@ -12,9 +12,24 @@ void main() {
     await abrirMembros(tester);
 
     expect(find.text('Marina Membro'), findsOneWidget);
-    expect(find.text('Em dia'), findsOneWidget);
-    expect(find.text('Vence em breve'), findsOneWidget);
+    expect(find.text('3 membros'), findsOneWidget);
+    // Os rótulos aparecem no chip de filtro e no selo do membro.
+    expect(find.text('Em dia'), findsNWidgets(2));
+    expect(find.text('Vence em breve'), findsNWidgets(2));
     expect(find.text('Vencido'), findsOneWidget);
+  });
+
+  testWidgets('ordena por vencimento, com o mais urgente primeiro', (tester) async {
+    await abrirMembros(tester);
+    await tester.tap(find.byTooltip('Ordenar'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Vencimento (mais urgente)'));
+    await tester.pumpAndSettle();
+
+    final carla = tester.getTopLeft(find.text('Carla Dias')).dy;
+    final bruno = tester.getTopLeft(find.text('Bruno Souza')).dy;
+    final marina = tester.getTopLeft(find.text('Marina Membro')).dy;
+    expect(carla < bruno && bruno < marina, isTrue);
   });
 
   testWidgets('busca e filtra por situação', (tester) async {
@@ -26,10 +41,18 @@ void main() {
     expect(find.text('Marina Membro'), findsNothing);
 
     await tester.enterText(find.byKey(const Key('campo-busca-membro')), '');
-    await tester.tap(find.text('Vencido (1)'));
+    // Os filtros ficam numa faixa horizontal: arrasta até o chip aparecer.
+    await tester.dragUntilVisible(
+      find.byKey(const Key('filtro-vencidos')),
+      find.byType(ListView).first,
+      const Offset(-200, 0),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('filtro-vencidos')));
     await tester.pump();
     expect(find.text('Carla Dias'), findsOneWidget);
     expect(find.text('Bruno Souza'), findsNothing);
+    expect(find.text('1 de 3 membros'), findsOneWidget);
   });
 
   testWidgets('cadastra membro e mostra a senha provisória', (tester) async {
