@@ -14,7 +14,7 @@ então cada usuário só enxerga e altera os dados da própria organização.
 | `POST` | `/auth/login` | livre | Login (RF01). Devolve o token JWT e os dados do usuário. Bloqueia o e-mail por 1 min após 5 erros |
 | `POST` | `/auth/recuperar-senha` | livre | Recuperação de senha (HU03). Ainda não envia e-mail |
 | `GET` | `/organizacao` | todos | Nome e identidade visual da organização (RF17) |
-| `PUT` | `/organizacao/identidade` | admin | Cor (contraste mínimo 4,5:1) e logo em base64 (até 512 KB) |
+| `PUT` | `/organizacao/identidade` | admin | Cor principal e segunda cor (contraste mínimo 4,5:1), estilo do fundo (`DEGRADE`, `SOLIDO`, `PADRAO`), modelo (`CLASSICO`, `MODERNO`, `MINIMALISTA`) e logo em base64 (até 512 KB) |
 | `GET` `POST` | `/planos` | admin | Listar e criar planos (RF04) |
 | `PUT` | `/planos/:id` | admin | Editar nome, valor, duração e cor (registrado na auditoria) |
 | `PATCH` | `/planos/:id/status` | admin | Ativar ou desativar |

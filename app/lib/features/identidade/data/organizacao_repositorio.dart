@@ -28,6 +28,9 @@ class OrganizacaoRepositorioMock implements OrganizacaoRepositorio {
       id: atual.id,
       nome: atual.nome,
       corPrincipal: dados.corPrincipal,
+      corSecundaria: dados.corSecundaria,
+      estiloFundo: dados.estiloFundo,
+      modelo: dados.modelo,
       logo: dados.manterLogo ? atual.logo : dados.logo,
       logoTipo: dados.manterLogo ? atual.logoTipo : dados.logoTipo,
     );

@@ -11,7 +11,7 @@ void main() {
   testWidgets('mostra a prévia com a cor padrão e contraste legível', (tester) async {
     await abrirIdentidade(tester);
 
-    expect(find.text('Prévia da carteirinha'), findsOneWidget);
+    expect(find.text('PRÉVIA DA CARTEIRINHA'), findsOneWidget);
     expect(find.text('Clube Exemplo'), findsOneWidget);
     await rolarAte(tester, find.byKey(const Key('texto-contraste')));
     expect(find.textContaining('Boa leitura'), findsOneWidget);
@@ -20,7 +20,7 @@ void main() {
   testWidgets('cor clara demais bloqueia o salvamento', (tester) async {
     await abrirIdentidade(tester);
 
-    await rolarAte(tester, find.byKey(const Key('botao-salvar-identidade')));
+    await rolarAte(tester, find.byKey(const Key('campo-cor-hex')));
     await tester.enterText(find.byKey(const Key('campo-cor-hex')), '#FFD54F');
     await tester.pump();
 
@@ -32,13 +32,42 @@ void main() {
   testWidgets('salva uma cor sugerida', (tester) async {
     await abrirIdentidade(tester);
 
-    await rolarAte(tester, find.byKey(const Key('botao-salvar-identidade')));
+    await rolarAte(tester, find.bySemanticsLabel('Cor #0B6E4F'));
     await tester.tap(find.bySemanticsLabel('Cor #0B6E4F'));
     await tester.pump();
     await tester.tap(find.byKey(const Key('botao-salvar-identidade')));
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Identidade visual salva'), findsOneWidget);
+  });
+
+  testWidgets('troca o modelo e o fundo e salva', (tester) async {
+    await abrirIdentidade(tester);
+
+    await tester.tap(find.bySemanticsLabel('Modelo Moderno'));
+    await tester.pump();
+    await rolarAte(tester, find.text('Padrão'));
+    await tester.tap(find.text('Padrão'));
+    await tester.pump();
+    // Sem degradê, a escolha da segunda cor some.
+    expect(find.text('Segunda cor do degradê'), findsNothing);
+
+    await tester.tap(find.byKey(const Key('botao-salvar-identidade')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Identidade visual salva'), findsOneWidget);
+  });
+
+  testWidgets('no degradê, escolhe a segunda cor', (tester) async {
+    await abrirIdentidade(tester);
+
+    await rolarAte(tester, find.bySemanticsLabel('Segunda cor #0B6E4F'));
+    await tester.tap(find.bySemanticsLabel('Segunda cor #0B6E4F'));
+    await tester.pump();
+    // A amostra escolhida ganha o ✓.
+    expect(
+      find.descendant(of: find.bySemanticsLabel('Segunda cor #0B6E4F'), matching: find.byIcon(Icons.check)),
+      findsOneWidget,
+    );
   });
 
   testWidgets('painel mostra o contato do suporte', (tester) async {

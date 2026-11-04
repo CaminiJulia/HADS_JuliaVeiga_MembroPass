@@ -19,6 +19,12 @@ CREATE TABLE organizacao (
     cnpj           CHAR(14) NOT NULL UNIQUE,
     status         status_organizacao NOT NULL DEFAULT 'EM_HABILITACAO',
     cor_principal  CHAR(7) CHECK (cor_principal ~ '^#[0-9A-F]{6}$'),
+    -- Segunda cor do degradê; NULL usa uma versão escura da principal.
+    cor_secundaria CHAR(7) CHECK (cor_secundaria ~ '^#[0-9A-F]{6}$'),
+    estilo_fundo   VARCHAR(10) NOT NULL DEFAULT 'DEGRADE'
+                   CHECK (estilo_fundo IN ('DEGRADE', 'SOLIDO', 'PADRAO')),
+    modelo_carteirinha VARCHAR(12) NOT NULL DEFAULT 'CLASSICO'
+                   CHECK (modelo_carteirinha IN ('CLASSICO', 'MODERNO', 'MINIMALISTA')),
     logo           BYTEA CHECK (octet_length(logo) <= 524288),
     logo_tipo      VARCHAR(20) CHECK (logo_tipo IN ('image/png', 'image/jpeg')),
     CHECK ((logo IS NULL) = (logo_tipo IS NULL))
