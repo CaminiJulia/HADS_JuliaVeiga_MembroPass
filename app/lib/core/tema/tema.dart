@@ -143,7 +143,10 @@ ThemeData criarTema() {
       backgroundColor: Cores.superficieElevada,
       contentTextStyle: const TextStyle(color: Cores.tinta, fontSize: 14, height: 1.3),
       actionTextColor: Cores.lilas,
-      shape: RoundedRectangleBorder(borderRadius: raio12, side: const BorderSide(color: Cores.borda)),
+      shape: RoundedRectangleBorder(
+        borderRadius: raio12,
+        side: const BorderSide(color: Cores.borda),
+      ),
       insetPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
     ),
     datePickerTheme: DatePickerThemeData(

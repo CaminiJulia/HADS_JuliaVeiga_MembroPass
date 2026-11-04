@@ -5,9 +5,24 @@ import 'package:flutter/material.dart';
 
 import '../domain/organizacao.dart';
 
-/// Carteirinha de exemplo com a marca da organização (RF17): cores, estilo
-/// do fundo e modelo do layout. Com [esboco], vira uma miniatura sem textos
-/// (barrinhas no lugar das palavras), para o seletor de modelos.
+/// Dados de quem aparece na carteirinha. Sem eles, a prévia usa um exemplo.
+class DadosCarteirinha {
+  const DadosCarteirinha({required this.nomeMembro, required this.plano, required this.validade});
+
+  static const exemplo = DadosCarteirinha(
+    nomeMembro: 'Marina Membro',
+    plano: 'Plano Mensal',
+    validade: 'Válida até 23/11/2026',
+  );
+
+  final String nomeMembro;
+  final String plano;
+  final String validade;
+}
+
+/// Carteirinha com a marca da organização (RF17): cores, estilo do fundo e
+/// modelo do layout. É a mesma na prévia do administrador e no app do membro.
+/// Com [esboco], vira uma miniatura sem textos, para o seletor de modelos.
 class PreviaCarteirinha extends StatelessWidget {
   const PreviaCarteirinha({
     super.key,
@@ -18,7 +33,10 @@ class PreviaCarteirinha extends StatelessWidget {
     this.modelo = ModeloCarteirinha.classico,
     this.logo,
     this.esboco = false,
+    this.dados = DadosCarteirinha.exemplo,
   });
+
+  final DadosCarteirinha dados;
 
   final Color cor;
 
@@ -99,8 +117,8 @@ class _Classico extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _Texto(c, 'Marina Membro', _Papel.nome),
-                  _Texto(c, 'Plano Mensal · Válida até 23/11/2026', _Papel.detalhe),
+                  _Texto(c, c.dados.nomeMembro, _Papel.nome),
+                  _Texto(c, '${c.dados.plano} · ${c.dados.validade}', _Papel.detalhe),
                 ],
               ),
             ),
@@ -130,9 +148,9 @@ class _Moderno extends StatelessWidget {
               SizedBox(height: 8),
               _Texto(c, c.nomeOrganizacao, _Papel.organizacao),
               const Spacer(),
-              _Texto(c, 'Marina Membro', _Papel.nome),
-              _Texto(c, 'Plano Mensal', _Papel.detalhe),
-              _Texto(c, 'Válida até 23/11/2026', _Papel.detalhe),
+              _Texto(c, c.dados.nomeMembro, _Papel.nome),
+              _Texto(c, c.dados.plano, _Papel.detalhe),
+              _Texto(c, c.dados.validade, _Papel.detalhe),
             ],
           ),
         ),
@@ -162,8 +180,8 @@ class _Minimalista extends StatelessWidget {
           ],
         ),
         const Spacer(),
-        _Texto(c, 'Marina Membro', _Papel.nome, centralizado: true),
-        _Texto(c, 'Válida até 23/11/2026', _Papel.detalhe, centralizado: true),
+        _Texto(c, c.dados.nomeMembro, _Papel.nome, centralizado: true),
+        _Texto(c, c.dados.validade, _Papel.detalhe, centralizado: true),
         const Spacer(),
         _Qr(c, tamanho: 44),
       ],
@@ -253,6 +271,7 @@ class _Qr extends StatelessWidget {
       height: tamanho,
       padding: EdgeInsets.all(tamanho * 0.07),
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(tamanho * 0.14)),
+      // Símbolo: o QR de verdade aparece grande, fora do cartão, para ser lido.
       child: FittedBox(child: Icon(Icons.qr_code_2, color: c._segunda)),
     );
   }

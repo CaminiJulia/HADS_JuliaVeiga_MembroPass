@@ -18,8 +18,8 @@ abstract final class Rotas {
 
   /// Área inicial de cada papel após o login (RF01).
   static String inicialDo(Papel papel) => switch (papel) {
-        Papel.administrador => areaAdministrador,
-        Papel.operador => areaOperador,
-        Papel.membro => areaMembro,
-      };
+    Papel.administrador => areaAdministrador,
+    Papel.operador => areaOperador,
+    Papel.membro => areaMembro,
+  };
 }

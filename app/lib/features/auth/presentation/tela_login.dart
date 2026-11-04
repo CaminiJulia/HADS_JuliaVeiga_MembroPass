@@ -40,11 +40,7 @@ class _TelaLoginState extends State<TelaLogin> {
 
     TextInput.finishAutofillContext();
     // Limpa a pilha: o botão voltar não deve retornar ao login nem às boas-vindas.
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      Rotas.inicialDo(usuario.papel),
-      (_) => false,
-      arguments: usuario,
-    );
+    Navigator.of(context).pushNamedAndRemoveUntil(Rotas.inicialDo(usuario.papel), (_) => false, arguments: usuario);
   }
 
   @override
@@ -70,19 +66,12 @@ class _TelaLoginState extends State<TelaLogin> {
                       children: [
                         Align(
                           alignment: Alignment.centerLeft,
-                          child: SvgPicture.asset(
-                            'assets/marca/icone.svg',
-                            width: 52,
-                            semanticsLabel: 'MembroPass',
-                          ),
+                          child: SvgPicture.asset('assets/marca/icone.svg', width: 52, semanticsLabel: 'MembroPass'),
                         ),
                         const SizedBox(height: 28),
                         Text(
                           'Acesse sua conta',
-                          style: texto.headlineMedium?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                          ),
+                          style: texto.headlineMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w800),
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -102,10 +91,7 @@ class _TelaLoginState extends State<TelaLogin> {
                           textInputAction: TextInputAction.next,
                           autocorrect: false,
                           autofillHints: const [AutofillHints.email],
-                          decoration: const InputDecoration(
-                            labelText: 'E-mail',
-                            prefixIcon: Icon(Icons.mail_outline),
-                          ),
+                          decoration: const InputDecoration(labelText: 'E-mail', prefixIcon: Icon(Icons.mail_outline)),
                           validator: Validadores.email,
                           onChanged: (_) => controller.limparErro(),
                         ),
@@ -122,13 +108,8 @@ class _TelaLoginState extends State<TelaLogin> {
                             prefixIcon: const Icon(Icons.lock_outline),
                             suffixIcon: IconButton(
                               tooltip: _senhaVisivel ? 'Ocultar senha' : 'Mostrar senha',
-                              icon: Icon(
-                                _senhaVisivel
-                                    ? Icons.visibility_off_outlined
-                                    : Icons.visibility_outlined,
-                              ),
-                              onPressed: () =>
-                                  setState(() => _senhaVisivel = !_senhaVisivel),
+                              icon: Icon(_senhaVisivel ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                              onPressed: () => setState(() => _senhaVisivel = !_senhaVisivel),
                             ),
                           ),
                           validator: Validadores.senha,
@@ -140,10 +121,9 @@ class _TelaLoginState extends State<TelaLogin> {
                           child: TextButton(
                             onPressed: controller.carregando
                                 ? null
-                                : () => Navigator.of(context).pushNamed(
-                                      Rotas.recuperarSenha,
-                                      arguments: _email.text.trim(),
-                                    ),
+                                : () => Navigator.of(
+                                    context,
+                                  ).pushNamed(Rotas.recuperarSenha, arguments: _email.text.trim()),
                             child: const Text('Esqueci minha senha'),
                           ),
                         ),
@@ -152,10 +132,7 @@ class _TelaLoginState extends State<TelaLogin> {
                           key: const Key('botao-entrar'),
                           onPressed: controller.carregando ? null : _entrar,
                           child: controller.carregando
-                              ? const SizedBox.square(
-                                  dimension: 22,
-                                  child: CircularProgressIndicator(strokeWidth: 2.5),
-                                )
+                              ? const SizedBox.square(dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.5))
                               : const Text('Entrar'),
                         ),
                         const SizedBox(height: 24),

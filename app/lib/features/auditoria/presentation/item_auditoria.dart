@@ -39,7 +39,10 @@ class ItemAuditoria extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(r.acao.rotulo, style: texto.bodyLarge?.copyWith(fontWeight: FontWeight.w600, color: Cores.tinta)),
+                Text(
+                  r.acao.rotulo,
+                  style: texto.bodyLarge?.copyWith(fontWeight: FontWeight.w600, color: Cores.tinta),
+                ),
                 if (descricao) Text(r.descricao, style: texto.bodyMedium?.copyWith(color: Cores.tinta)),
                 if (r.justificativa != null)
                   Text('Motivo: ${r.justificativa}', style: texto.bodyMedium?.copyWith(fontStyle: FontStyle.italic)),

@@ -87,16 +87,16 @@ void main() {
 
   group('Membro.novoVencimento', () {
     Membro venceEm(DateTime vencimento) => Membro(
-          id: 'x',
-          nome: 'X',
-          email: 'x@x.com',
-          planoId: 'p',
-          planoNome: 'Mensal',
-          planoDuracaoDias: 30,
-          dataAdesao: DateTime(2026, 1, 1),
-          ativo: true,
-          carteirinha: Carteirinha(status: StatusCarteirinha.ativa, dataVencimento: vencimento, qrVersao: 1),
-        );
+      id: 'x',
+      nome: 'X',
+      email: 'x@x.com',
+      planoId: 'p',
+      planoNome: 'Mensal',
+      planoDuracaoDias: 30,
+      dataAdesao: DateTime(2026, 1, 1),
+      ativo: true,
+      carteirinha: Carteirinha(status: StatusCarteirinha.ativa, dataVencimento: vencimento, qrVersao: 1),
+    );
 
     test('pagamento adiantado soma a partir do vencimento atual', () {
       expect(venceEm(DateTime(2026, 6, 20)).novoVencimento(DateTime(2026, 6, 10)), DateTime(2026, 7, 20));

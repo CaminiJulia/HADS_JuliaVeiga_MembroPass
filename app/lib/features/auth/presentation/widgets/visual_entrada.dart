@@ -7,15 +7,14 @@ import '../../../../core/tema/cores.dart';
 
 /// Visual escuro compartilhado pelas telas de entrada (boas-vindas, login e recuperar senha).
 ThemeData criarTemaEntrada() {
-  final esquema = ColorScheme.fromSeed(seedColor: Cores.marca, brightness: Brightness.dark).copyWith(
-    primary: Cores.lilas,
-    onPrimary: Cores.noPrimaria,
-    surface: Cores.fundo,
-    onSurface: Colors.white,
-  );
+  final esquema = ColorScheme.fromSeed(
+    seedColor: Cores.marca,
+    brightness: Brightness.dark,
+  ).copyWith(primary: Cores.lilas, onPrimary: Cores.noPrimaria, surface: Cores.fundo, onSurface: Colors.white);
 
-  UnderlineInputBorder linha(Color cor, [double espessura = 1]) =>
-      UnderlineInputBorder(borderSide: BorderSide(color: cor, width: espessura));
+  UnderlineInputBorder linha(Color cor, [double espessura = 1]) => UnderlineInputBorder(
+    borderSide: BorderSide(color: cor, width: espessura),
+  );
 
   return ThemeData(
     useMaterial3: true,
@@ -133,9 +132,12 @@ class _PintorPixels extends CustomPainter {
     final sorteio = Random(semente);
     final origem = canto.alongSize(size);
     // Some por completo no ponto mais distante da origem, sem deixar borda reta.
-    final alcance = [Offset.zero, size.topRight(Offset.zero), size.bottomLeft(Offset.zero), size.bottomRight(Offset.zero)]
-        .map((c) => (c - origem).distance)
-        .reduce(max);
+    final alcance = [
+      Offset.zero,
+      size.topRight(Offset.zero),
+      size.bottomLeft(Offset.zero),
+      size.bottomRight(Offset.zero),
+    ].map((c) => (c - origem).distance).reduce(max);
     final pincel = Paint();
 
     for (var x = 0.0; x + _lado <= size.width; x += _passo) {
@@ -145,10 +147,7 @@ class _PintorPixels extends CustomPainter {
         if (sorteio.nextDouble() > proximidade * 0.85) continue;
 
         pincel.color = Cores.lilas.withValues(alpha: 0.03 + proximidade * 0.17);
-        canvas.drawRRect(
-          RRect.fromRectAndRadius(Rect.fromLTWH(x, y, _lado, _lado), const Radius.circular(4)),
-          pincel,
-        );
+        canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(x, y, _lado, _lado), const Radius.circular(4)), pincel);
       }
     }
   }
@@ -170,7 +169,10 @@ class NomeMarca extends StatelessWidget {
       TextSpan(
         children: [
           TextSpan(text: 'Membro', style: estilo),
-          TextSpan(text: 'Pass', style: estilo.copyWith(color: Cores.lilas)),
+          TextSpan(
+            text: 'Pass',
+            style: estilo.copyWith(color: Cores.lilas),
+          ),
         ],
       ),
       semanticsLabel: 'MembroPass',

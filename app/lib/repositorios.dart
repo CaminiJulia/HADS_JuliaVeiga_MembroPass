@@ -2,6 +2,8 @@ import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 
 import 'core/api/cliente_api.dart';
+import 'features/area_membro/data/area_membro_repositorio.dart';
+import 'features/area_membro/domain/carteirinha_membro.dart';
 import 'features/auditoria/data/auditoria_repositorio_api.dart';
 import 'features/auditoria/domain/registro_auditoria.dart';
 import 'features/auth/data/auth_repositorio_api.dart';
@@ -35,22 +37,25 @@ class Repositorios {
     required this.unidades,
     required this.organizacao,
     required this.perfil,
+    required this.areaMembro,
   });
 
   /// Implementações que falam com a API, compartilhando o mesmo token.
   factory Repositorios.api(ClienteApi api) => Repositorios(
-        auth: AuthRepositorioApi(api),
-        planos: PlanosRepositorioApi(api),
-        beneficios: BeneficiosRepositorioApi(api),
-        membros: MembrosRepositorioApi(api),
-        auditoria: AuditoriaRepositorioApi(api),
-        unidades: UnidadesRepositorioApi(api),
-        organizacao: OrganizacaoRepositorioApi(api),
-        perfil: PerfilRepositorioApi(api),
-      );
+    auth: AuthRepositorioApi(api),
+    planos: PlanosRepositorioApi(api),
+    beneficios: BeneficiosRepositorioApi(api),
+    membros: MembrosRepositorioApi(api),
+    auditoria: AuditoriaRepositorioApi(api),
+    unidades: UnidadesRepositorioApi(api),
+    organizacao: OrganizacaoRepositorioApi(api),
+    perfil: PerfilRepositorioApi(api),
+    areaMembro: AreaMembroRepositorioApi(api),
+  );
 
-  /// Implementações em memória, para os testes.
-  factory Repositorios.simulados() {
+  /// Implementações em memória, para os testes. [areaMembro] permite simular
+  /// uma carteirinha bloqueada ou vencida.
+  factory Repositorios.simulados({AreaMembroRepositorio? areaMembro}) {
     final membros = MembrosRepositorioMock();
     return Repositorios(
       auth: AuthRepositorioMock(latencia: Duration.zero),
@@ -61,6 +66,7 @@ class Repositorios {
       unidades: UnidadesRepositorioMock(),
       organizacao: OrganizacaoRepositorioMock(),
       perfil: PerfilRepositorioMock(),
+      areaMembro: areaMembro ?? AreaMembroRepositorioMock(),
     );
   }
 
@@ -72,15 +78,17 @@ class Repositorios {
   final UnidadesRepositorio unidades;
   final OrganizacaoRepositorio organizacao;
   final PerfilRepositorio perfil;
+  final AreaMembroRepositorio areaMembro;
 
   List<SingleChildWidget> get providers => [
-        Provider<AuthRepositorio>.value(value: auth),
-        Provider<PlanosRepositorio>.value(value: planos),
-        Provider<BeneficiosRepositorio>.value(value: beneficios),
-        Provider<MembrosRepositorio>.value(value: membros),
-        Provider<AuditoriaRepositorio>.value(value: auditoria),
-        Provider<UnidadesRepositorio>.value(value: unidades),
-        Provider<OrganizacaoRepositorio>.value(value: organizacao),
-        Provider<PerfilRepositorio>.value(value: perfil),
-      ];
+    Provider<AuthRepositorio>.value(value: auth),
+    Provider<PlanosRepositorio>.value(value: planos),
+    Provider<BeneficiosRepositorio>.value(value: beneficios),
+    Provider<MembrosRepositorio>.value(value: membros),
+    Provider<AuditoriaRepositorio>.value(value: auditoria),
+    Provider<UnidadesRepositorio>.value(value: unidades),
+    Provider<OrganizacaoRepositorio>.value(value: organizacao),
+    Provider<PerfilRepositorio>.value(value: perfil),
+    Provider<AreaMembroRepositorio>.value(value: areaMembro),
+  ];
 }

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { AreaMembroModule } from './area-membro/area-membro.module';
 import { AuditoriaController } from './auditoria/auditoria.controller';
 import { AuthModule } from './auth/auth.module';
 import { BancoModule } from './banco/banco.module';
@@ -21,6 +22,7 @@ import { UnidadesModule } from './unidades/unidades.module';
     MembrosModule,
     UnidadesModule,
     PerfilModule,
+    AreaMembroModule,
   ],
   controllers: [SaudeController, AuditoriaController, OrganizacaoController],
 })

@@ -112,18 +112,21 @@ void main() {
 
   group('Membro.situacao', () {
     final hoje = DateTime(2026, 6, 15);
-    Membro membro({int venceEm = 30, bool ativo = true, StatusCarteirinha status = StatusCarteirinha.ativa}) =>
-        Membro(
-          id: 'x',
-          nome: 'Ana Maria Souza',
-          email: 'a@b.com',
-          planoId: 'p',
-          planoNome: 'Mensal',
-          planoDuracaoDias: 30,
-          dataAdesao: hoje,
-          ativo: ativo,
-          carteirinha: Carteirinha(status: status, dataVencimento: hoje.add(Duration(days: venceEm)), qrVersao: 1),
-        );
+    Membro membro({int venceEm = 30, bool ativo = true, StatusCarteirinha status = StatusCarteirinha.ativa}) => Membro(
+      id: 'x',
+      nome: 'Ana Maria Souza',
+      email: 'a@b.com',
+      planoId: 'p',
+      planoNome: 'Mensal',
+      planoDuracaoDias: 30,
+      dataAdesao: hoje,
+      ativo: ativo,
+      carteirinha: Carteirinha(
+        status: status,
+        dataVencimento: hoje.add(Duration(days: venceEm)),
+        qrVersao: 1,
+      ),
+    );
 
     test('em dia, vence em breve e vencido pelo vencimento', () {
       expect(membro(venceEm: 8).situacao(hoje), SituacaoMembro.emDia);

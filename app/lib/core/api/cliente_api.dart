@@ -6,15 +6,12 @@ import 'package:http/http.dart' as http;
 /// Guarda o token do login e o envia nas chamadas seguintes.
 class ClienteApi {
   ClienteApi({String? urlBase, http.Client? cliente})
-      : _urlBase = urlBase ?? urlPadrao,
-        _cliente = cliente ?? http.Client();
+    : _urlBase = urlBase ?? urlPadrao,
+      _cliente = cliente ?? http.Client();
 
   /// Troque com `flutter run --dart-define=API_URL=...`. O padrão aponta
   /// para o computador visto de dentro do emulador Android (10.0.2.2).
-  static const urlPadrao = String.fromEnvironment(
-    'API_URL',
-    defaultValue: 'http://10.0.2.2:3000',
-  );
+  static const urlPadrao = String.fromEnvironment('API_URL', defaultValue: 'http://10.0.2.2:3000');
 
   final String _urlBase;
   final http.Client _cliente;

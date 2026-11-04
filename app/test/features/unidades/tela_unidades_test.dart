@@ -70,7 +70,10 @@ void main() {
 
   test('período por extenso', () {
     expect(Datas.periodoPorExtenso(DateTime(2026, 11, 23), DateTime(2026, 11, 25)), '23 a 25 de novembro de 2026');
-    expect(Datas.periodoPorExtenso(DateTime(2026, 11, 30), DateTime(2026, 12, 2)), '30 de novembro a 2 de dezembro de 2026');
+    expect(
+      Datas.periodoPorExtenso(DateTime(2026, 11, 30), DateTime(2026, 12, 2)),
+      '30 de novembro a 2 de dezembro de 2026',
+    );
     expect(Datas.periodoPorExtenso(DateTime(2026, 3, 5), DateTime(2026, 3, 5)), '5 de março de 2026');
     expect(Datas.mesAbreviado(3), 'MAR');
   });

@@ -33,13 +33,13 @@ class RegistroAuditoria {
   });
 
   factory RegistroAuditoria.deJson(Map<String, dynamic> json) => RegistroAuditoria(
-        id: json['id'] as String,
-        acao: AcaoAuditoria.daApi(json['acao'] as String),
-        descricao: json['descricao'] as String,
-        justificativa: json['justificativa'] as String?,
-        administradorNome: json['administradorNome'] as String,
-        dataHora: DateTime.parse(json['dataHora'] as String).toLocal(),
-      );
+    id: json['id'] as String,
+    acao: AcaoAuditoria.daApi(json['acao'] as String),
+    descricao: json['descricao'] as String,
+    justificativa: json['justificativa'] as String?,
+    administradorNome: json['administradorNome'] as String,
+    dataHora: DateTime.parse(json['dataHora'] as String).toLocal(),
+  );
 
   final String id;
   final AcaoAuditoria acao;

@@ -114,7 +114,17 @@ void main() {
     });
 
     test('todas as cores sugeridas são legíveis', () {
-      for (final hex in ['#2B2FB8', '#14163A', '#0B6E4F', '#1565C0', '#6A1B9A', '#AD1457', '#C62828', '#B34700', '#37474F']) {
+      for (final hex in [
+        '#2B2FB8',
+        '#14163A',
+        '#0B6E4F',
+        '#1565C0',
+        '#6A1B9A',
+        '#AD1457',
+        '#C62828',
+        '#B34700',
+        '#37474F',
+      ]) {
         expect(Contraste.legivelComBranco(Contraste.lerHex(hex)!), isTrue, reason: hex);
       }
     });

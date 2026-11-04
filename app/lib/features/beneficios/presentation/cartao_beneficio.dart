@@ -17,7 +17,11 @@ class CartaoBeneficio extends StatelessWidget {
     required this.planos,
     this.aoEditar,
     this.aoExcluir,
+    this.mostrarPlanos = true,
   });
+
+  /// O membro só vê os próprios benefícios: os planos com direito não importam.
+  final bool mostrarPlanos;
 
   final Beneficio beneficio;
   final SituacaoVigencia situacao;
@@ -57,8 +61,10 @@ class CartaoBeneficio extends StatelessWidget {
                   const SizedBox(height: 10),
                   if (parceiro != null) _Detalhe(icone: Icons.storefront_outlined, texto: parceiro),
                   _Detalhe(icone: Icons.event_outlined, texto: beneficio.descricaoVigencia),
-                  const SizedBox(height: 8),
-                  if (planos.isEmpty)
+                  if (mostrarPlanos) const SizedBox(height: 8),
+                  if (!mostrarPlanos)
+                    const SizedBox.shrink()
+                  else if (planos.isEmpty)
                     Text(
                       'Nenhum plano vinculado',
                       style: texto.bodySmall?.copyWith(color: Cores.erro, fontWeight: FontWeight.w600),

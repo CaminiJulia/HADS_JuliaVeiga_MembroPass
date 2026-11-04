@@ -6,9 +6,7 @@ import 'package:membropass/repositorios.dart';
 
 void main() {
   Future<void> abrirApp(WidgetTester tester) async {
-    await tester.pumpWidget(
-      MembroPassApp(repositorios: Repositorios.simulados()),
-    );
+    await tester.pumpWidget(MembroPassApp(repositorios: Repositorios.simulados()));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('botao-entrar-com-email')));
     await tester.pumpAndSettle();
@@ -55,7 +53,7 @@ void main() {
   for (final (email, tituloArea) in [
     ('admin@membropass.dev', 'Clube Exemplo'),
     ('operador@membropass.dev', 'Validar check-in'),
-    ('membro@membropass.dev', 'Minha carteirinha'),
+    ('membro@membropass.dev', 'Apresente este código na entrada'),
   ]) {
     testWidgets('redireciona $email para "$tituloArea"', (tester) async {
       await abrirApp(tester);

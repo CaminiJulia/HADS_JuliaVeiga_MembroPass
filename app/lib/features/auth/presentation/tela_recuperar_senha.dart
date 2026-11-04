@@ -84,20 +84,14 @@ class _TelaRecuperarSenhaState extends State<TelaRecuperarSenha> {
             style: texto.bodyMedium?.copyWith(color: Colors.white70),
           ),
           const SizedBox(height: 24),
-          if (_erro != null) ...[
-            AvisoErro(mensagem: _erro!),
-            const SizedBox(height: 16),
-          ],
+          if (_erro != null) ...[AvisoErro(mensagem: _erro!), const SizedBox(height: 16)],
           TextFormField(
             controller: _email,
             enabled: !_enviando,
             keyboardType: TextInputType.emailAddress,
             autocorrect: false,
             autofillHints: const [AutofillHints.email],
-            decoration: const InputDecoration(
-              labelText: 'E-mail',
-              prefixIcon: Icon(Icons.mail_outline),
-            ),
+            decoration: const InputDecoration(labelText: 'E-mail', prefixIcon: Icon(Icons.mail_outline)),
             validator: Validadores.email,
             onFieldSubmitted: (_) => _enviar(),
           ),
@@ -105,10 +99,7 @@ class _TelaRecuperarSenhaState extends State<TelaRecuperarSenha> {
           FilledButton(
             onPressed: _enviando ? null : _enviar,
             child: _enviando
-                ? const SizedBox.square(
-                    dimension: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2.5),
-                  )
+                ? const SizedBox.square(dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.5))
                 : const Text('Enviar link'),
           ),
         ],
@@ -136,10 +127,7 @@ class _TelaRecuperarSenhaState extends State<TelaRecuperarSenha> {
           style: texto.bodyMedium?.copyWith(color: Colors.white70),
         ),
         const SizedBox(height: 24),
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Voltar ao login'),
-        ),
+        FilledButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Voltar ao login')),
       ],
     );
   }

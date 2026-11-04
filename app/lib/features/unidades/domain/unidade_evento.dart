@@ -29,7 +29,7 @@ class UnidadeEvento {
     localizacao: json['localizacao'] as String?,
     dataInicio: Datas.daApi(json['dataInicio'] as String?),
     dataFim: Datas.daApi(json['dataFim'] as String?),
-    planoIds: [for (final id in json['planoIds'] as List) id as String],
+    planoIds: [for (final id in (json['planoIds'] as List?) ?? const []) id as String],
     imagem: json['imagem'] == null ? null : base64Decode(json['imagem'] as String),
     imagemTipo: json['imagemTipo'] as String?,
   );

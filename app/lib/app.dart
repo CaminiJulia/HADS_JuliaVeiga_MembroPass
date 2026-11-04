@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'core/rotas.dart';
 import 'core/tema/tema.dart';
 import 'features/areas/area_provisoria.dart';
+import 'features/area_membro/presentation/tela_area_membro.dart';
 import 'features/auditoria/presentation/tela_auditoria.dart';
 import 'features/auth/domain/limitador_tentativas.dart';
 import 'features/auth/presentation/login_controller.dart';
@@ -30,9 +31,7 @@ class MembroPassApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ...repositorios.providers,
-        ChangeNotifierProvider(
-          create: (_) => LoginController(repositorios.auth, LimitadorTentativas()),
-        ),
+        ChangeNotifierProvider(create: (_) => LoginController(repositorios.auth, LimitadorTentativas())),
       ],
       child: MaterialApp(
         title: 'MembroPass',
@@ -46,32 +45,24 @@ class MembroPassApp extends StatelessWidget {
         routes: {
           Rotas.boasVindas: (_) => const TelaBoasVindas(),
           Rotas.login: (_) => const TelaLogin(),
-          Rotas.recuperarSenha: (context) => TelaRecuperarSenha(
-                emailInicial: ModalRoute.of(context)?.settings.arguments as String? ?? '',
-              ),
+          Rotas.recuperarSenha: (context) =>
+              TelaRecuperarSenha(emailInicial: ModalRoute.of(context)?.settings.arguments as String? ?? ''),
           Rotas.areaAdministrador: (_) => const TelaPainelAdmin(),
           Rotas.planos: (_) => const TelaPlanos(),
           Rotas.beneficios: (_) => const TelaBeneficios(),
           Rotas.membros: (_) => const TelaMembros(),
           // RF07: os membros que pedem atenção do administrador.
-          Rotas.ciclos: (_) => const TelaMembros(
-                titulo: 'Ciclos e bloqueios',
-                filtroInicial: FiltroMembros.atencao,
-              ),
+          Rotas.ciclos: (_) => const TelaMembros(titulo: 'Ciclos e bloqueios', filtroInicial: FiltroMembros.atencao),
           Rotas.auditoria: (_) => const TelaAuditoria(),
           Rotas.unidades: (_) => const TelaUnidades(),
           Rotas.identidade: (_) => const TelaIdentidade(),
           Rotas.perfil: (_) => const TelaPerfil(),
           Rotas.areaOperador: (_) => const AreaProvisoria(
-                titulo: 'Validar check-in',
-                descricao: 'Aqui ficará a leitura de QR Code do operador.',
-                icone: Icons.qr_code_scanner,
-              ),
-          Rotas.areaMembro: (_) => const AreaProvisoria(
-                titulo: 'Minha carteirinha',
-                descricao: 'Aqui ficará a carteirinha digital do membro.',
-                icone: Icons.badge_outlined,
-              ),
+            titulo: 'Validar check-in',
+            descricao: 'Aqui ficará a leitura de QR Code do operador.',
+            icone: Icons.qr_code_scanner,
+          ),
+          Rotas.areaMembro: (_) => const TelaAreaMembro(),
         },
       ),
     );

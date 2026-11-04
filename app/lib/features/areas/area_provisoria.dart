@@ -6,12 +6,7 @@ import '../auth/presentation/sair.dart';
 
 /// Tela de destino provisória de cada papel, até a área real ser implementada.
 class AreaProvisoria extends StatelessWidget {
-  const AreaProvisoria({
-    super.key,
-    required this.titulo,
-    required this.descricao,
-    required this.icone,
-  });
+  const AreaProvisoria({super.key, required this.titulo, required this.descricao, required this.icone});
 
   final String titulo;
   final String descricao;
@@ -26,13 +21,7 @@ class AreaProvisoria extends StatelessWidget {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: Text(titulo),
-        actions: [
-          IconButton(
-            tooltip: 'Sair',
-            icon: const Icon(Icons.logout),
-            onPressed: () => sairDaConta(context),
-          ),
-        ],
+        actions: [IconButton(tooltip: 'Sair', icon: const Icon(Icons.logout), onPressed: () => sairDaConta(context))],
       ),
       body: Center(
         child: Padding(
@@ -43,10 +32,7 @@ class AreaProvisoria extends StatelessWidget {
               Icon(icone, size: 64, color: Cores.primaria),
               const SizedBox(height: 16),
               if (usuario != null)
-                Text(
-                  'Olá, ${usuario.nome}',
-                  style: texto.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-                ),
+                Text('Olá, ${usuario.nome}', style: texto.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
               Text(
                 descricao,

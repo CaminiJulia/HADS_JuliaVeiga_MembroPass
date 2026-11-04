@@ -42,22 +42,23 @@ class _TelaAuditoriaState extends State<TelaAuditoria> {
       body: _erro != null
           ? AvisoTela(icone: Icons.cloud_off, texto: _erro!, aoTentarDeNovo: _carregar)
           : registros == null
-              ? const Center(child: CircularProgressIndicator())
-              : registros.isEmpty
-                  ? const AvisoTela(
-                      icone: Icons.history,
-                      texto: 'Nenhuma ação registrada ainda.\nPagamentos, bloqueios e '
-                          'desativações aparecem aqui.',
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _carregar,
-                      child: ListView.separated(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: registros.length,
-                        separatorBuilder: (_, _) => const Divider(height: 1),
-                        itemBuilder: (_, i) => ItemAuditoria(registros[i]),
-                      ),
-                    ),
+          ? const Center(child: CircularProgressIndicator())
+          : registros.isEmpty
+          ? const AvisoTela(
+              icone: Icons.history,
+              texto:
+                  'Nenhuma ação registrada ainda.\nPagamentos, bloqueios e '
+                  'desativações aparecem aqui.',
+            )
+          : RefreshIndicator(
+              onRefresh: _carregar,
+              child: ListView.separated(
+                padding: const EdgeInsets.all(16),
+                itemCount: registros.length,
+                separatorBuilder: (_, _) => const Divider(height: 1),
+                itemBuilder: (_, i) => ItemAuditoria(registros[i]),
+              ),
+            ),
     );
   }
 }

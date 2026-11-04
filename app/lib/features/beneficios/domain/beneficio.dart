@@ -31,7 +31,7 @@ class Beneficio {
     valorDesconto: (json['valorDesconto'] as num).toDouble(),
     vigInicio: Datas.daApi(json['vigInicio'] as String?),
     vigFim: Datas.daApi(json['vigFim'] as String?),
-    planoIds: [for (final id in json['planoIds'] as List) id as String],
+    planoIds: [for (final id in (json['planoIds'] as List?) ?? const []) id as String],
     logo: json['logo'] == null ? null : base64Decode(json['logo'] as String),
     logoTipo: json['logoTipo'] as String?,
   );

@@ -37,9 +37,7 @@ class LoginController extends ChangeNotifier {
       _limitador.registrarFalha(email);
       final novoBloqueio = _limitador.tempoRestante(email);
       // Mensagem genérica: não revela se o erro foi no e-mail ou na senha.
-      _erro = novoBloqueio == null
-          ? 'E-mail ou senha incorretos.'
-          : _mensagemBloqueio(novoBloqueio);
+      _erro = novoBloqueio == null ? 'E-mail ou senha incorretos.' : _mensagemBloqueio(novoBloqueio);
       return null;
     } on TentativasEsgotadasException catch (e) {
       _erro = e.mensagem;
@@ -65,9 +63,7 @@ class LoginController extends ChangeNotifier {
 
   static String _mensagemBloqueio(Duration restante) {
     final segundos = restante.inSeconds + 1;
-    final tempo = segundos >= 60
-        ? '${(segundos / 60).ceil()} min'
-        : '$segundos s';
+    final tempo = segundos >= 60 ? '${(segundos / 60).ceil()} min' : '$segundos s';
     return 'Muitas tentativas sem sucesso. Tente novamente em $tempo.';
   }
 }

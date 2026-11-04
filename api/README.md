@@ -18,6 +18,9 @@ então cada usuário só enxerga e altera os dados da própria organização.
 | `GET` | `/perfil` | admin | Dados da própria conta: nome, e-mail, telefone, cargo e foto |
 | `PUT` | `/perfil` | admin | Nome, telefone, cargo e foto em base64 (até 512 KB) |
 | `PUT` | `/perfil/senha` | admin | Troca a senha, confirmando a atual (mínimo 8 caracteres, com letras e números) |
+| `GET` | `/membro/carteirinha` | membro | Carteirinha do membro logado, com QR Code assinado (válido por 5 min; ausente se bloqueada) |
+| `GET` | `/membro/beneficios` | membro | Benefícios vigentes do plano do membro |
+| `GET` | `/membro/locais` | membro | Unidades e eventos (não encerrados) que aceitam o plano |
 | `GET` `POST` | `/planos` | admin | Listar e criar planos (RF04) |
 | `PUT` | `/planos/:id` | admin | Editar nome, valor, duração e cor (registrado na auditoria) |
 | `PATCH` | `/planos/:id/status` | admin | Ativar ou desativar |
@@ -57,6 +60,7 @@ api/
     ├── organizacao/  # identidade visual e cálculo de contraste
     ├── planos/       # RF04 e vínculo N:M com planos
     ├── beneficios/   # RF08
+    ├── area-membro/  # RF05 e RF09: carteirinha com QR, benefícios e locais
     ├── membros/      # RF05, RF06 e RF07
     └── unidades/     # RF11
 ```

@@ -18,11 +18,12 @@ lib/
 │   ├── painel_admin/ # tela inicial do administrador e contato do suporte
 │   ├── planos/       # RF04
 │   ├── beneficios/   # RF08
+│   ├── area_membro/  # RF05 e RF09: carteirinha com QR, benefícios e locais
 │   ├── membros/      # RF05, RF06 e RF07 (ciclos e bloqueios)
 │   ├── auditoria/    # RF16
 │   ├── unidades/     # RF11
 │   ├── identidade/   # RF17
-│   └── areas/        # telas provisórias do operador e do membro
+│   └── areas/        # tela provisória do operador
 └── repositorios.dart # liga cada tela à API (ou às versões simuladas nos testes)
 ```
 

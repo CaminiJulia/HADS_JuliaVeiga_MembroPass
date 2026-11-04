@@ -73,14 +73,14 @@ void main() {
   group('Beneficio', () {
     final hoje = DateTime(2026, 6, 15);
     Beneficio comVigencia(DateTime? inicio, DateTime? fim) => Beneficio(
-          id: 'x',
-          nome: 'X',
-          tipoDesconto: TipoDesconto.percentual,
-          valorDesconto: 12.5,
-          planoIds: const [],
-          vigInicio: inicio,
-          vigFim: fim,
-        );
+      id: 'x',
+      nome: 'X',
+      tipoDesconto: TipoDesconto.percentual,
+      valorDesconto: 12.5,
+      planoIds: const [],
+      vigInicio: inicio,
+      vigFim: fim,
+    );
 
     test('situação da vigência', () {
       expect(comVigencia(null, null).situacao(hoje), SituacaoVigencia.vigente);
@@ -94,7 +94,13 @@ void main() {
       expect(b.valorCurto, '12,5%');
       expect(b.iniciais, 'X');
       expect(
-        Beneficio(id: 'v', nome: 'V', tipoDesconto: TipoDesconto.valor, valorDesconto: 12.5, planoIds: const []).valorCurto,
+        Beneficio(
+          id: 'v',
+          nome: 'V',
+          tipoDesconto: TipoDesconto.valor,
+          valorDesconto: 12.5,
+          planoIds: const [],
+        ).valorCurto,
         'R\$ 12,50',
       );
       expect(b.descricaoVigencia, 'Válido de 01/01/2026 a 31/12/2026');

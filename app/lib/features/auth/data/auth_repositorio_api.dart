@@ -12,8 +12,7 @@ class AuthRepositorioApi implements AuthRepositorio {
   @override
   Future<Usuario> entrar({required String email, required String senha}) async {
     try {
-      final corpo = await _api.post('/auth/login', {'email': email.trim(), 'senha': senha})
-          as Map<String, dynamic>;
+      final corpo = await _api.post('/auth/login', {'email': email.trim(), 'senha': senha}) as Map<String, dynamic>;
       _api.token = corpo['token'] as String;
       final usuario = corpo['usuario'] as Map<String, dynamic>;
       return Usuario(

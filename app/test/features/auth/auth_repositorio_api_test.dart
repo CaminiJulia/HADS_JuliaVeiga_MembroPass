@@ -12,9 +12,7 @@ void main() {
   late ClienteApi api;
 
   AuthRepositorioApi repositorioRespondendo(int status, [Object? corpo]) {
-    final cliente = MockClient(
-      (_) async => http.Response(corpo == null ? '' : jsonEncode(corpo), status),
-    );
+    final cliente = MockClient((_) async => http.Response(corpo == null ? '' : jsonEncode(corpo), status));
     api = ClienteApi(urlBase: 'http://api', cliente: cliente);
     return AuthRepositorioApi(api);
   }
@@ -45,10 +43,7 @@ void main() {
   test('401 vira CredenciaisInvalidasException', () {
     final repositorio = repositorioRespondendo(401, {'message': 'E-mail ou senha incorretos.'});
 
-    expect(
-      repositorio.entrar(email: 'a@b.com', senha: 'x'),
-      throwsA(isA<CredenciaisInvalidasException>()),
-    );
+    expect(repositorio.entrar(email: 'a@b.com', senha: 'x'), throwsA(isA<CredenciaisInvalidasException>()));
   });
 
   test('429 traz a mensagem de bloqueio da API', () {
@@ -56,8 +51,7 @@ void main() {
 
     expect(
       repositorio.entrar(email: 'a@b.com', senha: 'x'),
-      throwsA(isA<TentativasEsgotadasException>()
-          .having((e) => e.mensagem, 'mensagem', 'Muitas tentativas.')),
+      throwsA(isA<TentativasEsgotadasException>().having((e) => e.mensagem, 'mensagem', 'Muitas tentativas.')),
     );
   });
 

@@ -82,7 +82,9 @@ void main() {
     await tester.pumpAndSettle();
 
     final cartao = find.ancestor(of: find.text('Família'), matching: find.byType(Row)).first;
-    final icone = tester.widget<Icon>(find.descendant(of: cartao, matching: find.byIcon(Icons.workspace_premium_outlined)));
+    final icone = tester.widget<Icon>(
+      find.descendant(of: cartao, matching: find.byIcon(Icons.workspace_premium_outlined)),
+    );
     expect(icone.color, const Color(0xFF2BB5A0));
   });
 
