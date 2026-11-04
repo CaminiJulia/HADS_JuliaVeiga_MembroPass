@@ -53,7 +53,7 @@ void main() {
   for (final (email, tituloArea) in [
     ('admin@membropass.dev', 'Clube Exemplo'),
     ('operador@membropass.dev', 'Validar check-in'),
-    ('membro@membropass.dev', 'Apresente este código na entrada'),
+    ('membro@membropass.dev', 'Marina Membro'),
   ]) {
     testWidgets('redireciona $email para "$tituloArea"', (tester) async {
       await abrirApp(tester);

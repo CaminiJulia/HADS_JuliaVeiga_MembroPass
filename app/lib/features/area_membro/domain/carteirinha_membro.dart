@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import '../../../core/formatacao/datas.dart';
 import '../../beneficios/domain/beneficio.dart';
 import '../../membros/domain/membro.dart';
@@ -29,6 +32,7 @@ class CarteirinhaMembro {
     required this.dataEmissao,
     required this.dataVencimento,
     this.planoCor,
+    this.foto,
     this.qrCodigo,
     this.qrExpiraEm,
   });
@@ -40,6 +44,7 @@ class CarteirinhaMembro {
     final qr = json['qr'] as Map<String, dynamic>?;
     return CarteirinhaMembro(
       nomeMembro: membro['nome'] as String,
+      foto: membro['foto'] == null ? null : base64Decode(membro['foto'] as String),
       planoNome: plano['nome'] as String,
       planoCor: plano['cor'] as String?,
       numero: carteirinha['numero'] as String,
@@ -52,6 +57,9 @@ class CarteirinhaMembro {
   }
 
   final String nomeMembro;
+
+  /// Foto escolhida pelo próprio membro; aparece na carteirinha.
+  final Uint8List? foto;
   final String planoNome;
   final String? planoCor;
 
@@ -83,6 +91,9 @@ class CarteirinhaMembro {
 /// O que o membro logado vê: a própria carteirinha, benefícios e locais.
 abstract interface class AreaMembroRepositorio {
   Future<CarteirinhaMembro> carteirinha();
+
+  /// Troca (ou remove, com `null`) a foto da carteirinha.
+  Future<CarteirinhaMembro> salvarFoto(Uint8List? foto, {String? tipo});
 
   /// Benefícios vigentes do plano do membro (RF09).
   Future<List<Beneficio>> beneficios();

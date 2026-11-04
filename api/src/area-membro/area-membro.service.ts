@@ -1,12 +1,21 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { BancoService } from '../banco/banco.service';
 import { Datas } from '../comum/datas';
+import { SalvarFotoDto } from './dto/salvar-foto.dto';
 import { QrCarteirinha } from './qr-carteirinha';
+
+const TAMANHO_MAXIMO_FOTO = 512 * 1024;
 
 interface LinhaCarteirinha {
   membro_nome: string;
   membro_email: string;
   data_adesao: string;
+  foto: Buffer | null;
+  foto_tipo: string | null;
   plano_id: string;
   plano_nome: string;
   plano_cor: string | null;
@@ -52,7 +61,7 @@ export class AreaMembroService {
 
   async carteirinha(membroId: string, organizacaoId: string) {
     const [l] = await this.banco.consultar<LinhaCarteirinha>(
-      `SELECT m.nome AS membro_nome, m.email AS membro_email, m.data_adesao,
+      `SELECT m.nome AS membro_nome, m.email AS membro_email, m.data_adesao, m.foto, m.foto_tipo,
               p.id AS plano_id, p.nome AS plano_nome, p.cor AS plano_cor,
               c.id AS carteirinha_id, c.status, c.data_emissao, c.data_vencimento, c.qr_versao
        FROM membro m
@@ -79,6 +88,8 @@ export class AreaMembroService {
         nome: l.membro_nome,
         email: l.membro_email,
         dataAdesao: l.data_adesao,
+        foto: l.foto ? l.foto.toString('base64') : null,
+        fotoTipo: l.foto_tipo,
       },
       plano: { id: l.plano_id, nome: l.plano_nome, cor: l.plano_cor },
       carteirinha: {
@@ -90,6 +101,27 @@ export class AreaMembroService {
       },
       qr,
     };
+  }
+
+  // A foto é do próprio membro: só ele troca, pela área dele no app.
+  async salvarFoto(
+    membroId: string,
+    organizacaoId: string,
+    dados: SalvarFotoDto,
+  ) {
+    const foto = dados.foto ? Buffer.from(dados.foto, 'base64') : null;
+    if (foto && foto.length > TAMANHO_MAXIMO_FOTO) {
+      throw new BadRequestException('A foto pode ter no máximo 512 KB.');
+    }
+    const linhas = await this.banco.consultar<{ id: string }>(
+      `UPDATE membro SET foto = $3, foto_tipo = $4
+       WHERE id = $1 AND organizacao_id = $2 AND status = 'ATIVO'
+       RETURNING id`,
+      [membroId, organizacaoId, foto, foto ? dados.fotoTipo : null],
+    );
+    if (linhas.length === 0)
+      throw new NotFoundException('Membro não encontrado.');
+    return this.carteirinha(membroId, organizacaoId);
   }
 
   // Benefícios do plano do membro que estão vigentes hoje.

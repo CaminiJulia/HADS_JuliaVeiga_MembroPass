@@ -44,6 +44,7 @@ void main() {
   testWidgets('troca o modelo e o fundo e salva', (tester) async {
     await abrirIdentidade(tester);
 
+    await rolarAte(tester, find.bySemanticsLabel('Modelo Moderno'));
     await tester.tap(find.bySemanticsLabel('Modelo Moderno'));
     await tester.pump();
     await rolarAte(tester, find.text('Padrão'));

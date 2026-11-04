@@ -26,8 +26,8 @@ enum EstiloFundo {
 
 /// Disposição das informações na carteirinha.
 enum ModeloCarteirinha {
-  classico('Clássico', 'Logo em cima, QR no canto'),
-  moderno('Moderno', 'QR Code grande à direita'),
+  classico('Clássico', 'Foto redonda, QR embaixo'),
+  moderno('Moderno', 'Foto ao lado, QR bem grande'),
   minimalista('Minimalista', 'Centralizado e enxuto');
 
   const ModeloCarteirinha(this.rotulo, this.descricao);

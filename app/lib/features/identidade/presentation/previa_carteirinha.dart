@@ -2,27 +2,46 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../domain/organizacao.dart';
 
 /// Dados de quem aparece na carteirinha. Sem eles, a prévia usa um exemplo.
 class DadosCarteirinha {
-  const DadosCarteirinha({required this.nomeMembro, required this.plano, required this.validade});
+  const DadosCarteirinha({
+    required this.nomeMembro,
+    required this.plano,
+    required this.validade,
+    this.numero,
+    this.foto,
+    this.qrCodigo,
+    this.avisoQr,
+  });
 
   static const exemplo = DadosCarteirinha(
     nomeMembro: 'Marina Membro',
     plano: 'Plano Mensal',
     validade: 'Válida até 23/11/2026',
+    numero: '38F29DBA',
   );
 
   final String nomeMembro;
   final String plano;
   final String validade;
+  final String? numero;
+  final Uint8List? foto;
+
+  /// Conteúdo do QR Code; `null` mostra só o símbolo (prévia do administrador).
+  final String? qrCodigo;
+
+  /// Quando há aviso (bloqueada, código expirado...), ele toma o lugar do QR.
+  final String? avisoQr;
 }
 
-/// Carteirinha com a marca da organização (RF17): cores, estilo do fundo e
-/// modelo do layout. É a mesma na prévia do administrador e no app do membro.
-/// Com [esboco], vira uma miniatura sem textos, para o seletor de modelos.
+/// Carteirinha vertical com a marca da organização (RF17): cores, estilo do
+/// fundo e modelo do layout. É a mesma na prévia do administrador e no app do
+/// membro, onde ocupa quase a tela toda. Com [esboco], vira uma miniatura sem
+/// textos, para o seletor de modelos.
 class PreviaCarteirinha extends StatelessWidget {
   const PreviaCarteirinha({
     super.key,
@@ -34,9 +53,15 @@ class PreviaCarteirinha extends StatelessWidget {
     this.logo,
     this.esboco = false,
     this.dados = DadosCarteirinha.exemplo,
+    this.aoTocarFoto,
   });
 
-  final DadosCarteirinha dados;
+  /// Proporção em pé (largura / altura), a de um crachá.
+  static const proporcao = 0.625;
+
+  /// Tamanho de desenho; na tela, o cartão é ampliado ou reduzido por inteiro.
+  static const _largura = 320.0;
+  static const _altura = _largura / proporcao;
 
   final Color cor;
 
@@ -47,50 +72,57 @@ class PreviaCarteirinha extends StatelessWidget {
   final ModeloCarteirinha modelo;
   final Uint8List? logo;
   final bool esboco;
+  final DadosCarteirinha dados;
+
+  /// No app do membro, tocar na foto abre a troca de foto.
+  final VoidCallback? aoTocarFoto;
 
   Color get _segunda => corSecundaria ?? Color.lerp(cor, Colors.black, 0.35)!;
 
   @override
   Widget build(BuildContext context) {
-    final raio = BorderRadius.circular(20);
-    final cartao = AspectRatio(
-      aspectRatio: 1.6,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: cor,
-          gradient: estilo == EstiloFundo.degrade
-              ? LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [cor, _segunda])
-              : null,
-          borderRadius: raio,
-          boxShadow: esboco
-              ? null
-              : [BoxShadow(color: cor.withValues(alpha: 0.35), blurRadius: 18, offset: const Offset(0, 8))],
-        ),
-        child: ClipRRect(
-          borderRadius: raio,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              if (estilo == EstiloFundo.padrao) CustomPaint(painter: _PintorPadrao()),
-              Padding(
-                padding: const EdgeInsets.all(18),
-                child: switch (modelo) {
-                  ModeloCarteirinha.classico => _Classico(this),
-                  ModeloCarteirinha.moderno => _Moderno(this),
-                  ModeloCarteirinha.minimalista => _Minimalista(this),
-                },
-              ),
-            ],
-          ),
+    final raio = BorderRadius.circular(24);
+    final cartao = DecoratedBox(
+      decoration: BoxDecoration(
+        color: cor,
+        gradient: estilo == EstiloFundo.degrade
+            ? LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [cor, _segunda])
+            : null,
+        borderRadius: raio,
+        boxShadow: esboco
+            ? null
+            : [BoxShadow(color: cor.withValues(alpha: 0.35), blurRadius: 24, offset: const Offset(0, 10))],
+      ),
+      child: ClipRRect(
+        borderRadius: raio,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (estilo == EstiloFundo.padrao) CustomPaint(painter: _PintorPadrao()),
+            Padding(
+              padding: const EdgeInsets.all(22),
+              child: switch (modelo) {
+                ModeloCarteirinha.classico => _Classico(this),
+                ModeloCarteirinha.moderno => _Moderno(this),
+                ModeloCarteirinha.minimalista => _Minimalista(this),
+              },
+            ),
+          ],
         ),
       ),
     );
-    // A miniatura é a carteirinha em tamanho real, só reduzida: mesmas proporções.
-    return esboco ? FittedBox(child: SizedBox(width: 340, child: cartao)) : cartao;
+    // Desenhada sempre no mesmo tamanho e ampliada por inteiro: as proporções
+    // não mudam entre a miniatura, a prévia e a tela do membro.
+    return AspectRatio(
+      aspectRatio: proporcao,
+      child: FittedBox(
+        child: SizedBox(width: _largura, height: _altura, child: cartao),
+      ),
+    );
   }
 }
 
-/// Logo em cima à esquerda; nome e plano embaixo; QR pequeno no canto.
+/// Marca em cima; foto redonda, nome e plano no centro; QR embaixo.
 class _Classico extends StatelessWidget {
   const _Classico(this.c);
 
@@ -99,38 +131,30 @@ class _Classico extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            _Logo(c, tamanho: 40),
-            SizedBox(width: 10),
+            _Logo(c, tamanho: 36),
+            const SizedBox(width: 10),
             Expanded(child: _Texto(c, c.nomeOrganizacao, _Papel.organizacao)),
           ],
         ),
+        const SizedBox(height: 18),
+        _Foto(c, largura: 112, altura: 112, redonda: true),
+        const SizedBox(height: 12),
+        _Texto(c, c.dados.nomeMembro, _Papel.nome, centralizado: true),
+        const SizedBox(height: 2),
+        _Texto(c, '${c.dados.plano} · ${c.dados.validade}', _Papel.detalhe, centralizado: true),
         const Spacer(),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _Texto(c, c.dados.nomeMembro, _Papel.nome),
-                  _Texto(c, '${c.dados.plano} · ${c.dados.validade}', _Papel.detalhe),
-                ],
-              ),
-            ),
-            _Qr(c, tamanho: 60),
-          ],
-        ),
+        _AreaQr(c, lado: 190),
+        const SizedBox(height: 8),
+        _Numero(c),
       ],
     );
   }
 }
 
-/// Informações à esquerda e um QR Code grande à direita, fácil de ler.
+/// Foto e dados lado a lado; QR Code bem grande, ocupando a largura.
 class _Moderno extends StatelessWidget {
   const _Moderno(this.c);
 
@@ -138,30 +162,44 @@ class _Moderno extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _Logo(c, tamanho: 36),
-              SizedBox(height: 8),
-              _Texto(c, c.nomeOrganizacao, _Papel.organizacao),
-              const Spacer(),
-              _Texto(c, c.dados.nomeMembro, _Papel.nome),
-              _Texto(c, c.dados.plano, _Papel.detalhe),
-              _Texto(c, c.dados.validade, _Papel.detalhe),
-            ],
-          ),
+        Row(
+          children: [
+            _Logo(c, tamanho: 32),
+            const SizedBox(width: 10),
+            Expanded(child: _Texto(c, c.nomeOrganizacao, _Papel.organizacao)),
+          ],
         ),
-        SizedBox(width: 14),
-        _Qr(c, tamanho: 112),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            _Foto(c, largura: 92, altura: 112, redonda: false),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _Texto(c, c.dados.nomeMembro, _Papel.nome),
+                  const SizedBox(height: 4),
+                  _Texto(c, c.dados.plano, _Papel.detalhe),
+                  _Texto(c, c.dados.validade, _Papel.detalhe),
+                  const SizedBox(height: 6),
+                  _Numero(c, centralizado: false),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const Spacer(),
+        _AreaQr(c, lado: 276),
       ],
     );
   }
 }
 
-/// Tudo centralizado: marca, nome e um QR discreto.
+/// Tudo centralizado e enxuto: foto grande, nome e um QR discreto.
 class _Minimalista extends StatelessWidget {
   const _Minimalista(this.c);
 
@@ -174,16 +212,20 @@ class _Minimalista extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _Logo(c, tamanho: 26),
-            SizedBox(width: 8),
+            _Logo(c, tamanho: 24),
+            const SizedBox(width: 8),
             Flexible(child: _Texto(c, c.nomeOrganizacao, _Papel.detalhe)),
           ],
         ),
         const Spacer(),
+        _Foto(c, largura: 132, altura: 132, redonda: true),
+        const SizedBox(height: 14),
         _Texto(c, c.dados.nomeMembro, _Papel.nome, centralizado: true),
         _Texto(c, c.dados.validade, _Papel.detalhe, centralizado: true),
         const Spacer(),
-        _Qr(c, tamanho: 44),
+        _AreaQr(c, lado: 160),
+        const SizedBox(height: 6),
+        _Numero(c),
       ],
     );
   }
@@ -205,8 +247,8 @@ class _Texto extends StatelessWidget {
     if (c.esboco) {
       final (largura, altura, opacidade) = switch (papel) {
         _Papel.organizacao => (130.0, 16.0, 0.9),
-        _Papel.nome => (150.0, 18.0, 1.0),
-        _Papel.detalhe => (110.0, 11.0, 0.6),
+        _Papel.nome => (150.0, 20.0, 1.0),
+        _Papel.detalhe => (110.0, 12.0, 0.6),
       };
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 3),
@@ -223,8 +265,8 @@ class _Texto extends StatelessWidget {
     final estilos = Theme.of(context).textTheme;
     final estilo = switch (papel) {
       _Papel.organizacao => estilos.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w800),
-      _Papel.nome => estilos.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
-      _Papel.detalhe => estilos.bodySmall?.copyWith(color: Colors.white),
+      _Papel.nome => estilos.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w800),
+      _Papel.detalhe => estilos.bodySmall?.copyWith(color: Colors.white.withValues(alpha: 0.9)),
     };
     return Text(
       texto,
@@ -232,6 +274,28 @@ class _Texto extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
       textAlign: centralizado ? TextAlign.center : null,
       style: estilo,
+    );
+  }
+}
+
+class _Numero extends StatelessWidget {
+  const _Numero(this.c, {this.centralizado = true});
+
+  final PreviaCarteirinha c;
+  final bool centralizado;
+
+  @override
+  Widget build(BuildContext context) {
+    final numero = c.dados.numero;
+    if (numero == null || c.esboco) return const SizedBox.shrink();
+    return Text(
+      'Nº $numero',
+      textAlign: centralizado ? TextAlign.center : null,
+      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+        color: Colors.white.withValues(alpha: 0.85),
+        letterSpacing: 2,
+        fontWeight: FontWeight.w700,
+      ),
     );
   }
 }
@@ -258,21 +322,117 @@ class _Logo extends StatelessWidget {
   }
 }
 
-class _Qr extends StatelessWidget {
-  const _Qr(this.c, {required this.tamanho});
+/// Foto do membro com moldura branca; sem foto, uma silhueta. No app do
+/// membro, um selo de câmera indica que dá para trocar.
+class _Foto extends StatelessWidget {
+  const _Foto(this.c, {required this.largura, required this.altura, required this.redonda});
 
   final PreviaCarteirinha c;
-  final double tamanho;
+  final double largura;
+  final double altura;
+  final bool redonda;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: tamanho,
-      height: tamanho,
-      padding: EdgeInsets.all(tamanho * 0.07),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(tamanho * 0.14)),
-      // Símbolo: o QR de verdade aparece grande, fora do cartão, para ser lido.
-      child: FittedBox(child: Icon(Icons.qr_code_2, color: c._segunda)),
+    final foto = c.esboco ? null : c.dados.foto;
+    final moldura = Container(
+      width: largura,
+      height: altura,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.18),
+        shape: redonda ? BoxShape.circle : BoxShape.rectangle,
+        borderRadius: redonda ? null : BorderRadius.circular(16),
+        border: Border.all(color: Colors.white, width: 3),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: foto != null
+          ? Image.memory(foto, fit: BoxFit.cover, gaplessPlayback: true, semanticLabel: 'Foto do membro')
+          : c.esboco
+          ? null
+          : Icon(Icons.person, size: min(largura, altura) * 0.55, color: Colors.white.withValues(alpha: 0.85)),
+    );
+
+    final aoTocar = c.aoTocarFoto;
+    if (aoTocar == null || c.esboco) return moldura;
+    // Nó próprio: o leitor de tela anuncia o botão da foto separado do cartão.
+    return Semantics(
+      container: true,
+      button: true,
+      label: foto == null ? 'Adicionar foto' : 'Trocar foto',
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: aoTocar,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            moldura,
+            Positioned(
+              right: redonda ? 2 : -6,
+              bottom: redonda ? 2 : -6,
+              child: Container(
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: 6)],
+                ),
+                child: Icon(Icons.photo_camera, size: 16, color: c._segunda),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Quadro branco com o QR Code (ou o aviso que toma o lugar dele).
+class _AreaQr extends StatelessWidget {
+  const _AreaQr(this.c, {required this.lado});
+
+  final PreviaCarteirinha c;
+  final double lado;
+
+  @override
+  Widget build(BuildContext context) {
+    final aviso = c.dados.avisoQr;
+    final codigo = c.dados.qrCodigo;
+    final Widget conteudo;
+    if (c.esboco || (codigo == null && aviso == null)) {
+      conteudo = FittedBox(child: Icon(Icons.qr_code_2, color: c._segunda));
+    } else if (aviso != null) {
+      conteudo = Column(
+        key: const Key('aviso-qr'),
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.lock_outline, size: lado * 0.22, color: c._segunda),
+          const SizedBox(height: 10),
+          Text(
+            aviso,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: c._segunda, fontWeight: FontWeight.w600),
+          ),
+        ],
+      );
+    } else {
+      conteudo = QrImageView(
+        key: const Key('qr-carteirinha'),
+        data: codigo!,
+        padding: EdgeInsets.zero,
+        // Módulos escuros na cor da marca, sobre branco: leitura garantida.
+        eyeStyle: QrEyeStyle(eyeShape: QrEyeShape.square, color: c._segunda),
+        dataModuleStyle: QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: c._segunda),
+        semanticsLabel: 'QR Code da carteirinha',
+      );
+    }
+    return Center(
+      child: Container(
+        width: lado,
+        height: lado,
+        padding: EdgeInsets.all(lado * 0.07),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(lado * 0.1)),
+        child: conteudo,
+      ),
     );
   }
 }

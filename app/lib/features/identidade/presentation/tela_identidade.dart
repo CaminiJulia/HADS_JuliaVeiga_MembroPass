@@ -213,7 +213,8 @@ class _TelaIdentidadeState extends State<TelaIdentidade> {
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
           children: [
             const _TituloSecao('Prévia da carteirinha', topo: 0),
-            previa(_modelo),
+            // Em pé, como no app do membro; aqui um pouco menor, para caber o resto.
+            Center(child: SizedBox(width: 250, child: previa(_modelo))),
             const SizedBox(height: 10),
             Text(
               'É assim que os membros veem a carteirinha no app.',

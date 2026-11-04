@@ -79,7 +79,11 @@ CREATE TABLE membro (
     telefone        VARCHAR(20),
     plano_id        UUID NOT NULL REFERENCES plano_associacao (id),
     data_adesao     DATE NOT NULL DEFAULT CURRENT_DATE,
-    status          status_membro NOT NULL DEFAULT 'ATIVO'
+    status          status_membro NOT NULL DEFAULT 'ATIVO',
+    -- Foto da carteirinha, enviada pelo próprio membro no app.
+    foto            BYTEA CHECK (octet_length(foto) <= 524288),
+    foto_tipo       VARCHAR(20) CHECK (foto_tipo IN ('image/png', 'image/jpeg')),
+    CHECK ((foto IS NULL) = (foto_tipo IS NULL))
 );
 
 -- RF05: carteirinha digital, uma por membro. A versão do QR muda a cada

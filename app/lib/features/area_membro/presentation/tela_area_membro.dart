@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../core/formatacao/datas.dart';
 import '../../../core/tema/contraste.dart';
@@ -132,6 +134,8 @@ class _AbaCarteirinhaState extends State<_AbaCarteirinha> {
   /// Depois de uma falha, espera este tanto (em segundos) antes de tentar de novo.
   int _esperaNovaTentativa = 0;
 
+  bool _salvandoFoto = false;
+
   @override
   void initState() {
     super.initState();
@@ -172,6 +176,73 @@ class _AbaCarteirinhaState extends State<_AbaCarteirinha> {
     }
   }
 
+  Future<void> _opcoesFoto() async {
+    final temFoto = _carteirinha?.foto != null;
+    final escolha = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Tirar foto'),
+              onTap: () => Navigator.pop(context, 'camera'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Escolher da galeria'),
+              onTap: () => Navigator.pop(context, 'galeria'),
+            ),
+            if (temFoto)
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Cores.erro),
+                title: const Text('Remover foto', style: TextStyle(color: Cores.erro)),
+                onTap: () => Navigator.pop(context, 'remover'),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (escolha == null || !mounted) return;
+    if (escolha == 'remover') return _salvarFoto(null, null);
+
+    final arquivo = await ImagePicker().pickImage(
+      source: escolha == 'camera' ? ImageSource.camera : ImageSource.gallery,
+      maxWidth: 600,
+      maxHeight: 600,
+      imageQuality: 85,
+      preferredCameraDevice: CameraDevice.front,
+    );
+    if (arquivo == null) return;
+    final bytes = await arquivo.readAsBytes();
+    if (!mounted) return;
+    if (bytes.length > 512 * 1024) {
+      avisar(context, 'A foto pode ter no máximo 512 KB.');
+      return;
+    }
+    await _salvarFoto(bytes, arquivo.name.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
+  }
+
+  Future<void> _salvarFoto(Uint8List? foto, String? tipo) async {
+    setState(() => _salvandoFoto = true);
+    try {
+      final c = await context.read<AreaMembroRepositorio>().salvarFoto(foto, tipo: tipo);
+      if (!mounted) return;
+      setState(() {
+        _carteirinha = c;
+        _restante = c.qrExpiraEm?.difference(DateTime.now()).inSeconds ?? 0;
+      });
+      avisar(context, foto == null ? 'Foto removida.' : 'Foto atualizada na carteirinha.');
+    } catch (e) {
+      if (mounted) avisar(context, mensagemDeErro(e));
+    } finally {
+      if (mounted) setState(() => _salvandoFoto = false);
+    }
+  }
+
   void _aCadaSegundo() {
     if (_carteirinha?.qrCodigo == null || !mounted) return;
     setState(() {
@@ -195,49 +266,96 @@ class _AbaCarteirinhaState extends State<_AbaCarteirinha> {
     final cor = Contraste.lerHex(org?.corPrincipal ?? '') ?? Cores.marca;
     final hoje = Datas.hoje();
     final situacao = c.situacao(hoje);
+    final expirado = !situacao.semQr && _restante <= 0;
+    final avisoQr = switch (situacao) {
+      SituacaoCarteirinha.bloqueada => 'Carteirinha bloqueada.\nCheck‑in indisponível.',
+      SituacaoCarteirinha.invalidada => 'Carteirinha inativa.\nCheck‑in indisponível.',
+      _ => expirado ? 'Código expirado.\nVerifique a conexão.' : null,
+    };
+    // Em dia, a própria carteirinha já diz a validade; o aviso só aparece
+    // quando há algo a fazer.
+    final mostrarAviso = situacao != SituacaoCarteirinha.emDia;
 
-    return RefreshIndicator(
-      onRefresh: _carregar,
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-            children: [
-              Opacity(
-                opacity: situacao.semQr ? 0.55 : 1,
-                child: PreviaCarteirinha(
-                  cor: cor,
-                  corSecundaria: Contraste.lerHex(org?.corSecundaria ?? ''),
-                  estilo: org?.estiloFundo ?? EstiloFundo.degrade,
-                  modelo: org?.modelo ?? ModeloCarteirinha.classico,
-                  nomeOrganizacao: org?.nome ?? '',
-                  logo: org?.logo,
-                  dados: DadosCarteirinha(
-                    nomeMembro: c.nomeMembro,
-                    plano: 'Plano ${c.planoNome}',
-                    validade: 'Válida até ${Datas.formatar(c.dataVencimento)}',
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              _AvisoSituacao(carteirinha: c, situacao: situacao, hoje: hoje),
-              const SizedBox(height: 16),
-              if (situacao.semQr)
-                _SemQr(situacao)
-              else
-                _PainelQr(
-                  carteirinha: c,
-                  restante: _restante,
-                  corModulos: Color.lerp(cor, Colors.black, 0.35)!,
-                  aoRenovar: _carregar,
-                ),
-            ],
-          ),
+    final cartao = Opacity(
+      opacity: situacao.semQr ? 0.6 : 1,
+      child: PreviaCarteirinha(
+        cor: cor,
+        corSecundaria: Contraste.lerHex(org?.corSecundaria ?? ''),
+        estilo: org?.estiloFundo ?? EstiloFundo.degrade,
+        modelo: org?.modelo ?? ModeloCarteirinha.classico,
+        nomeOrganizacao: org?.nome ?? '',
+        logo: org?.logo,
+        aoTocarFoto: _salvandoFoto ? null : _opcoesFoto,
+        dados: DadosCarteirinha(
+          nomeMembro: c.nomeMembro,
+          plano: 'Plano ${c.planoNome}',
+          validade: 'Válida até ${Datas.formatar(c.dataVencimento)}',
+          numero: c.numero,
+          foto: c.foto,
+          qrCodigo: avisoQr == null ? c.qrCodigo : null,
+          avisoQr: avisoQr,
         ),
       ),
     );
+
+    return LayoutBuilder(
+      builder: (context, restricoes) {
+        // A carteirinha ocupa quase a tela toda: o maior tamanho que cabe na
+        // altura, descontando o aviso e a linha de baixo.
+        final reserva = 32 + 52 + (mostrarAviso ? 104 : 0) + (c.foto == null ? 30 : 0);
+        final pelaAltura = (restricoes.maxHeight - reserva) * PreviaCarteirinha.proporcao;
+        final largura = min(min(restricoes.maxWidth - 32, 440.0), max(pelaAltura, 240.0));
+
+        return RefreshIndicator(
+          onRefresh: _carregar,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+            children: [
+              if (mostrarAviso) ...[
+                _AvisoSituacao(carteirinha: c, situacao: situacao, hoje: hoje),
+                const SizedBox(height: 12),
+              ],
+              Center(
+                child: SizedBox(width: largura, child: cartao),
+              ),
+              if (c.foto == null && !situacao.semQr)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Text(
+                    'Toque na foto para adicionar a sua.',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              if (!situacao.semQr)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.autorenew, size: 16, color: Cores.textoSecundario),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          expirado ? 'Código expirado' : 'Novo código em ${_contagem(_restante)}',
+                          key: const Key('contagem-qr'),
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                      TextButton(onPressed: _renovando ? null : _carregar, child: const Text('Gerar novo código')),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  static String _contagem(int segundos) {
+    final s = segundos.clamp(0, 9999);
+    return '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}';
   }
 }
 
@@ -314,132 +432,6 @@ class _AvisoSituacao extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// QR Code grande, sobre branco, com o número e a contagem até renovar.
-class _PainelQr extends StatelessWidget {
-  const _PainelQr({
-    required this.carteirinha,
-    required this.restante,
-    required this.corModulos,
-    required this.aoRenovar,
-  });
-
-  final CarteirinhaMembro carteirinha;
-  final int restante;
-  final Color corModulos;
-  final VoidCallback aoRenovar;
-
-  @override
-  Widget build(BuildContext context) {
-    final texto = Theme.of(context).textTheme;
-    final segundos = restante.clamp(0, 9999);
-    final contagem = '${segundos ~/ 60}:${(segundos % 60).toString().padLeft(2, '0')}';
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 14),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
-      child: Column(
-        children: [
-          Text(
-            'Apresente este código na entrada',
-            style: texto.titleSmall?.copyWith(color: Cores.noPrimaria, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 14),
-          // Código expirado não serve no check-in: sai da tela até renovar.
-          if (segundos == 0)
-            SizedBox(
-              key: const Key('qr-expirado'),
-              width: 240,
-              height: 240,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.wifi_off_rounded, size: 48, color: Color(0xFF5A5E85)),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Código expirado. Verifique sua conexão e gere um novo.',
-                    textAlign: TextAlign.center,
-                    style: texto.bodyMedium?.copyWith(color: const Color(0xFF5A5E85)),
-                  ),
-                ],
-              ),
-            )
-          else
-            QrImageView(
-              key: const Key('qr-carteirinha'),
-              data: carteirinha.qrCodigo!,
-              size: 240,
-              padding: EdgeInsets.zero,
-              eyeStyle: QrEyeStyle(eyeShape: QrEyeShape.square, color: corModulos),
-              dataModuleStyle: QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: corModulos),
-              semanticsLabel: 'QR Code da carteirinha',
-            ),
-          const SizedBox(height: 12),
-          Text(
-            'Nº ${carteirinha.numero}',
-            style: texto.titleMedium?.copyWith(
-              color: Cores.noPrimaria,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 2,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.autorenew, size: 16, color: Color(0xFF5A5E85)),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  'Novo código em $contagem',
-                  key: const Key('contagem-qr'),
-                  textAlign: TextAlign.center,
-                  style: texto.bodySmall?.copyWith(color: const Color(0xFF5A5E85)),
-                ),
-              ),
-            ],
-          ),
-          TextButton.icon(
-            onPressed: aoRenovar,
-            style: TextButton.styleFrom(foregroundColor: Cores.marca),
-            icon: const Icon(Icons.refresh, size: 18),
-            label: const Text('Gerar novo código'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SemQr extends StatelessWidget {
-  const _SemQr(this.situacao);
-
-  final SituacaoCarteirinha situacao;
-
-  @override
-  Widget build(BuildContext context) {
-    final texto = Theme.of(context).textTheme;
-    return CartaoItem(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
-        child: Column(
-          children: [
-            const Icon(Icons.qr_code_2, size: 56, color: Cores.textoSecundario),
-            const SizedBox(height: 10),
-            Text('QR Code indisponível', style: texto.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 4),
-            Text(
-              'Com a carteirinha ${situacao.rotulo.toLowerCase()}, não é possível fazer check‑in.',
-              textAlign: TextAlign.center,
-              style: texto.bodySmall,
-            ),
-          ],
-        ),
       ),
     );
   }

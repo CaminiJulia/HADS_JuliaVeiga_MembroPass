@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import '../../../core/api/cliente_api.dart';
 import '../../../core/formatacao/datas.dart';
 import '../../beneficios/domain/beneficio.dart';
@@ -13,6 +16,15 @@ class AreaMembroRepositorioApi implements AreaMembroRepositorio {
   @override
   Future<CarteirinhaMembro> carteirinha() async =>
       CarteirinhaMembro.deJson(await _api.get('/membro/carteirinha') as Map<String, dynamic>);
+
+  @override
+  Future<CarteirinhaMembro> salvarFoto(Uint8List? foto, {String? tipo}) async => CarteirinhaMembro.deJson(
+    await _api.put('/membro/foto', {
+          'foto': foto == null ? null : base64Encode(foto),
+          'fotoTipo': foto == null ? null : tipo,
+        })
+        as Map<String, dynamic>,
+  );
 
   @override
   Future<List<Beneficio>> beneficios() async => [
@@ -39,6 +51,8 @@ class AreaMembroRepositorioMock implements AreaMembroRepositorio {
   /// Simula a falta de conexão nas próximas buscas.
   bool semConexao = false;
 
+  Uint8List? foto;
+
   @override
   Future<CarteirinhaMembro> carteirinha() async {
     buscas++;
@@ -47,6 +61,7 @@ class AreaMembroRepositorioMock implements AreaMembroRepositorio {
     final ativa = status == StatusCarteirinha.ativa;
     return CarteirinhaMembro(
       nomeMembro: 'Marina Membro',
+      foto: foto,
       planoNome: 'Mensal',
       planoCor: '#3A9FE0',
       numero: '38F29DBA',
@@ -56,6 +71,12 @@ class AreaMembroRepositorioMock implements AreaMembroRepositorio {
       qrCodigo: ativa ? 'qr-de-teste-$buscas' : null,
       qrExpiraEm: ativa ? DateTime.now().add(const Duration(minutes: 5)) : null,
     );
+  }
+
+  @override
+  Future<CarteirinhaMembro> salvarFoto(Uint8List? foto, {String? tipo}) async {
+    this.foto = foto;
+    return carteirinha();
   }
 
   @override

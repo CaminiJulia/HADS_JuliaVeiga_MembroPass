@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:membropass/app.dart';
@@ -26,7 +28,8 @@ void main() {
 
     expect(find.text('Marina Membro'), findsOneWidget);
     expect(find.textContaining('Plano Mensal'), findsOneWidget);
-    expect(find.text('Carteirinha em dia'), findsOneWidget);
+    // Em dia, não há aviso: a carteirinha ocupa a tela.
+    expect(find.byKey(const Key('aviso-situacao-carteirinha')), findsNothing);
     await tester.scrollUntilVisible(find.byKey(const Key('qr-carteirinha')), 200);
     expect(find.text('Nº 38F29DBA'), findsOneWidget);
     expect(tester.widget<QrImageView>(find.byKey(const Key('qr-carteirinha'))), isNotNull);
@@ -59,7 +62,7 @@ void main() {
     // Expirado, o código some até conseguir renovar.
     await tester.pump(const Duration(seconds: 15));
     await tester.pump();
-    await tester.scrollUntilVisible(find.byKey(const Key('qr-expirado')), 200);
+    expect(find.byKey(const Key('aviso-qr')), findsOneWidget);
     expect(find.byKey(const Key('qr-carteirinha')), findsNothing);
 
     // A conexão volta: na próxima tentativa automática, o QR reaparece.
@@ -76,8 +79,7 @@ void main() {
 
     expect(find.text('Carteirinha bloqueada'), findsOneWidget);
     expect(find.byKey(const Key('qr-carteirinha')), findsNothing);
-    await tester.scrollUntilVisible(find.text('QR Code indisponível'), 200);
-    expect(find.text('QR Code indisponível'), findsOneWidget);
+    expect(find.byKey(const Key('aviso-qr')), findsOneWidget);
   });
 
   testWidgets('vencida, mas não bloqueada, avisa e mantém o QR Code', (tester) async {
@@ -86,6 +88,22 @@ void main() {
     expect(find.textContaining('Pagamento vencido'), findsOneWidget);
     await tester.scrollUntilVisible(find.byKey(const Key('qr-carteirinha')), 200);
     expect(find.byKey(const Key('qr-carteirinha')), findsOneWidget);
+  });
+
+  testWidgets('a foto do membro aparece na carteirinha e pode ser removida', (tester) async {
+    final area = AreaMembroRepositorioMock()..foto = Uint8List.fromList(_pngTransparente);
+    await entrarComoMembro(tester, area);
+
+    expect(find.bySemanticsLabel('Trocar foto'), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('Trocar foto'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Remover foto'));
+    await tester.pumpAndSettle();
+
+    expect(area.foto, isNull);
+    expect(find.text('Foto removida.'), findsOneWidget);
+    expect(find.bySemanticsLabel('Adicionar foto'), findsOneWidget);
+    expect(find.text('Toque na foto para adicionar a sua.'), findsOneWidget);
   });
 
   testWidgets('abas de benefícios e locais', (tester) async {
@@ -111,3 +129,12 @@ void main() {
     expect(find.byKey(const Key('botao-entrar-com-email')), findsOneWidget);
   });
 }
+
+/// PNG 1x1 transparente, para simular uma foto.
+const _pngTransparente = <int>[
+  0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, //
+  0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, //
+  0x89, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00, //
+  0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, //
+  0x42, 0x60, 0x82,
+];
