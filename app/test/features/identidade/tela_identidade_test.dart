@@ -70,6 +70,34 @@ void main() {
     );
   });
 
+  testWidgets('a rodinha abre a roda de cores e só aceita cores legíveis', (tester) async {
+    await abrirIdentidade(tester);
+
+    // Cor digitada fora das sugestões: a rodinha fica marcada com ela.
+    await rolarAte(tester, find.byKey(const Key('campo-cor-hex')));
+    await tester.enterText(find.byKey(const Key('campo-cor-hex')), '#123456');
+    await tester.pump();
+    await rolarAte(tester, find.bySemanticsLabel('Cor personalizada'));
+    await tester.tap(find.bySemanticsLabel('Cor personalizada'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Cor principal'), findsOneWidget);
+    expect(find.descendant(of: find.byType(AlertDialog), matching: find.text('#123456')), findsOneWidget);
+    expect(find.textContaining('Boa leitura'), findsWidgets);
+    await tester.tap(find.byKey(const Key('botao-usar-cor')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('botao-usar-cor')), findsNothing);
+
+    // Cor clara: a roda avisa e não deixa usar.
+    await tester.enterText(find.byKey(const Key('campo-cor-hex')), '#FFD54F');
+    await tester.pump();
+    await tester.tap(find.bySemanticsLabel('Cor personalizada'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Clara demais para o texto branco'), findsOneWidget);
+    final usar = tester.widget<FilledButton>(find.byKey(const Key('botao-usar-cor')));
+    expect(usar.onPressed, isNull);
+  });
+
   testWidgets('painel mostra o contato do suporte', (tester) async {
     await entrarComoAdmin(tester);
     await rolarAte(tester, find.text(Suporte.email));

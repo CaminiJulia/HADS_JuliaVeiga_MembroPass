@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 import '../../../core/tema/contraste.dart';
 import '../../../core/tema/cores.dart';
+import '../../../core/widgets/roda_de_cores.dart';
 import '../domain/plano.dart';
 
 /// Cores sugeridas para os planos: tons médios, que aparecem bem tanto como
@@ -81,94 +81,17 @@ class SeletorCorPlano extends StatelessWidget {
           selecionada: personalizada,
           aoTocar: habilitado
               ? () async {
-                  final escolhida = await escolherCorPersonalizada(context, inicial: corDoPlano(selecionada));
+                  final escolhida = await escolherNaRodaDeCores(
+                    context,
+                    inicial: corDoPlano(selecionada),
+                    avaliar: (c) => corEscuraDemais(c)
+                        ? (ok: false, mensagem: 'Escura demais: sumiria no fundo escuro do app.')
+                        : (ok: true, mensagem: 'Boa para destacar o plano.'),
+                  );
                   if (escolhida != null) aoEscolher(escolhida);
                 }
               : null,
-          child: _Interior.arcoIris(personalizada ? corDoPlano(hex) : null),
-        ),
-      ],
-    );
-  }
-}
-
-/// Abre a roda de cores. Devolve "#RRGGBB" ou `null` se o administrador cancelar.
-Future<String?> escolherCorPersonalizada(BuildContext context, {required Color inicial}) {
-  return showDialog<String>(context: context, builder: (_) => _DialogoRodaDeCores(inicial));
-}
-
-class _DialogoRodaDeCores extends StatefulWidget {
-  const _DialogoRodaDeCores(this.inicial);
-
-  final Color inicial;
-
-  @override
-  State<_DialogoRodaDeCores> createState() => _DialogoRodaDeCoresState();
-}
-
-class _DialogoRodaDeCoresState extends State<_DialogoRodaDeCores> {
-  late Color _cor = widget.inicial;
-
-  @override
-  Widget build(BuildContext context) {
-    final texto = Theme.of(context).textTheme;
-    final escura = corEscuraDemais(_cor);
-    final hex = Contraste.paraHex(_cor);
-
-    return AlertDialog(
-      title: const Text('Cor personalizada'),
-      contentPadding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ColorPicker(
-              pickerColor: _cor,
-              onColorChanged: (c) => setState(() => _cor = c.withValues(alpha: 1)),
-              paletteType: PaletteType.hueWheel,
-              enableAlpha: false,
-              labelTypes: const [],
-              displayThumbColor: true,
-              colorPickerWidth: 240,
-              portraitOnly: true,
-            ),
-            // A roda já mostra a cor escolhida ao lado da barra de brilho;
-            // aqui ficam o código e se ela serve para o fundo escuro.
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(
-                children: [
-                  Icon(
-                    escura ? Icons.error_outline : Icons.check_circle_outline,
-                    size: 20,
-                    color: escura ? Cores.erro : Cores.sucesso,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(hex, style: texto.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-                        Text(
-                          escura ? 'Escura demais: sumiria no fundo escuro do app.' : 'Boa para destacar o plano.',
-                          key: const Key('aviso-cor-personalizada'),
-                          style: texto.bodySmall?.copyWith(color: escura ? Cores.erro : Cores.sucesso),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-        FilledButton(
-          key: const Key('botao-usar-cor'),
-          onPressed: escura ? null : () => Navigator.pop(context, hex),
-          child: const Text('Usar cor'),
+          child: AnelArcoIris(personalizada ? corDoPlano(hex) : null),
         ),
       ],
     );
@@ -214,43 +137,17 @@ class _Amostra extends StatelessWidget {
 
 /// O círculo de dentro de cada amostra.
 class _Interior extends StatelessWidget {
-  const _Interior.cheia(Color this.cor, {this.marcada = false}) : icone = null, arcoIris = false;
+  const _Interior.cheia(Color this.cor, {this.marcada = false}) : icone = null;
 
   /// Só o contorno, com um ícone: a amostra "padrão".
-  const _Interior.contorno(Color this.cor, this.icone) : marcada = false, arcoIris = false;
-
-  /// Anel de arco-íris; com [cor], mostra a cor personalizada escolhida.
-  const _Interior.arcoIris(this.cor) : marcada = false, icone = null, arcoIris = true;
+  const _Interior.contorno(Color this.cor, this.icone) : marcada = false;
 
   final Color? cor;
   final IconData? icone;
   final bool marcada;
-  final bool arcoIris;
-
-  static const _espectro = SweepGradient(
-    colors: [
-      Color(0xFFFF5252),
-      Color(0xFFFFD740),
-      Color(0xFF69F0AE),
-      Color(0xFF40C4FF),
-      Color(0xFF7C4DFF),
-      Color(0xFFFF4081),
-      Color(0xFFFF5252),
-    ],
-  );
 
   @override
   Widget build(BuildContext context) {
-    if (arcoIris) {
-      return Container(
-        padding: const EdgeInsets.all(3),
-        decoration: const BoxDecoration(shape: BoxShape.circle, gradient: _espectro),
-        child: Container(
-          decoration: BoxDecoration(shape: BoxShape.circle, color: cor ?? Cores.fundo),
-          child: Icon(cor == null ? Icons.colorize : Icons.check, size: 15, color: Colors.white),
-        ),
-      );
-    }
     if (icone != null) {
       return Container(
         decoration: BoxDecoration(

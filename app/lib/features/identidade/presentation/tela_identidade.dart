@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../../core/tema/contraste.dart';
 import '../../../core/tema/cores.dart';
 import '../../../core/widgets/componentes.dart';
+import '../../../core/widgets/roda_de_cores.dart';
 import '../domain/organizacao.dart';
 import 'previa_carteirinha.dart';
 
@@ -82,6 +83,22 @@ class _TelaIdentidadeState extends State<TelaIdentidade> {
       if (mounted) setState(() => _erro = mensagemDeErro(e));
     }
   }
+
+  /// Na roda, só passam cores em que o texto branco da carteirinha fica legível.
+  static AvaliacaoCor _avaliar(Color c) {
+    final valor = Contraste.comBranco(c).toStringAsFixed(1).replaceAll('.', ',');
+    return Contraste.legivelComBranco(c)
+        ? (ok: true, mensagem: 'Contraste $valor:1 com o texto branco. Boa leitura.')
+        : (ok: false, mensagem: 'Contraste $valor:1. Clara demais para o texto branco (mínimo 4,5:1).');
+  }
+
+  Future<Color?> _abrirRoda(Color inicial, String titulo) async {
+    final hex = await escolherNaRodaDeCores(context, inicial: inicial, avaliar: _avaliar, titulo: titulo);
+    return hex == null ? null : Contraste.lerHex(hex);
+  }
+
+  static bool _ehSugestao(Color? cor) =>
+      cor != null && TelaIdentidade.sugestoes.any((s) => s.toARGB32() == cor.toARGB32());
 
   void _escolherCor(Color cor) => setState(() {
     _cor = cor;
@@ -252,6 +269,14 @@ class _TelaIdentidadeState extends State<TelaIdentidade> {
                       selecionada: cor.toARGB32() == _corSecundaria?.toARGB32(),
                       aoTocar: () => setState(() => _corSecundaria = cor),
                     ),
+                  _AmostraRoda(
+                    rotulo: 'Segunda cor personalizada',
+                    cor: _corSecundaria != null && !_ehSugestao(_corSecundaria) ? _corSecundaria : null,
+                    aoTocar: () async {
+                      final cor = await _abrirRoda(_corSecundaria ?? _cor, 'Segunda cor do degradê');
+                      if (cor != null) setState(() => _corSecundaria = cor);
+                    },
+                  ),
                 ],
               ),
             ],
@@ -267,6 +292,14 @@ class _TelaIdentidadeState extends State<TelaIdentidade> {
                     selecionada: cor.toARGB32() == _cor.toARGB32(),
                     aoTocar: () => _escolherCor(cor),
                   ),
+                _AmostraRoda(
+                  rotulo: 'Cor personalizada',
+                  cor: _ehSugestao(_cor) ? null : _cor,
+                  aoTocar: () async {
+                    final cor = await _abrirRoda(_cor, 'Cor principal');
+                    if (cor != null) _escolherCor(cor);
+                  },
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -424,6 +457,44 @@ class _AmostraCor extends StatelessWidget {
               : automatica
               ? const Icon(Icons.auto_awesome, color: Colors.white70, size: 16)
               : null,
+        ),
+      ),
+    );
+  }
+}
+
+/// Bolinha de arco-íris que abre a roda de cores; marcada quando a cor em uso
+/// ([cor]) não é uma das sugeridas.
+class _AmostraRoda extends StatelessWidget {
+  const _AmostraRoda({required this.rotulo, required this.cor, required this.aoTocar});
+
+  final String rotulo;
+  final Color? cor;
+  final VoidCallback aoTocar;
+
+  @override
+  Widget build(BuildContext context) {
+    final selecionada = cor != null;
+    return Semantics(
+      button: true,
+      selected: selecionada,
+      label: rotulo,
+      excludeSemantics: true,
+      child: Tooltip(
+        message: rotulo,
+        child: InkWell(
+          onTap: aoTocar,
+          customBorder: const CircleBorder(),
+          child: Container(
+            width: 40,
+            height: 40,
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: selecionada ? Cores.tinta : Colors.transparent, width: 2),
+            ),
+            child: AnelArcoIris(cor),
+          ),
         ),
       ),
     );
