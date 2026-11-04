@@ -22,7 +22,7 @@ enum SituacaoCarteirinha {
   bool get semQr => this == bloqueada || this == invalidada;
 }
 
-/// Carteirinha do membro logado (RF05), com o QR Code de uso imediato.
+/// Carteirinha do membro logado (RF05), com o QR Code do check-in.
 class CarteirinhaMembro {
   const CarteirinhaMembro({
     required this.nomeMembro,
@@ -34,7 +34,6 @@ class CarteirinhaMembro {
     this.planoCor,
     this.foto,
     this.qrCodigo,
-    this.qrExpiraEm,
   });
 
   factory CarteirinhaMembro.deJson(Map<String, dynamic> json) {
@@ -52,7 +51,6 @@ class CarteirinhaMembro {
       dataEmissao: Datas.daApi(carteirinha['dataEmissao'] as String)!,
       dataVencimento: Datas.daApi(carteirinha['dataVencimento'] as String)!,
       qrCodigo: qr?['codigo'] as String?,
-      qrExpiraEm: qr == null ? null : DateTime.parse(qr['expiraEm'] as String).toLocal(),
     );
   }
 
@@ -69,11 +67,8 @@ class CarteirinhaMembro {
   final DateTime dataEmissao;
   final DateTime dataVencimento;
 
-  /// Código assinado pela API; `null` quando a carteirinha está bloqueada.
+  /// Código fixo assinado pela API; `null` quando a carteirinha está bloqueada.
   final String? qrCodigo;
-
-  /// Depois disso o QR deixa de valer e o app pede um novo.
-  final DateTime? qrExpiraEm;
 
   /// Dias até o vencimento (negativo se já venceu).
   int diasParaVencer(DateTime hoje) => dataVencimento.difference(hoje).inDays;

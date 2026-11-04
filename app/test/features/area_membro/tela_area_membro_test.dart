@@ -30,47 +30,28 @@ void main() {
     expect(find.textContaining('Plano Mensal'), findsOneWidget);
     // Em dia, não há aviso: a carteirinha ocupa a tela.
     expect(find.byKey(const Key('aviso-situacao-carteirinha')), findsNothing);
-    await tester.scrollUntilVisible(find.byKey(const Key('qr-carteirinha')), 200);
     expect(find.text('Nº 38F29DBA'), findsOneWidget);
     expect(tester.widget<QrImageView>(find.byKey(const Key('qr-carteirinha'))), isNotNull);
   });
 
-  testWidgets('renova o QR Code antes de expirar', (tester) async {
+  testWidgets('o QR Code é fixo: não é buscado de novo com o tempo', (tester) async {
     final area = AreaMembroRepositorioMock();
     await entrarComoMembro(tester, area);
-    expect(area.buscas, 1);
 
-    // O QR simulado vale 5 minutos; o app renova 15 s antes do fim.
-    await tester.pump(const Duration(minutes: 4, seconds: 50));
-    await tester.pump();
-    expect(area.buscas, 2);
+    await tester.pump(const Duration(minutes: 10));
+    expect(area.buscas, 1);
+    expect(find.byKey(const Key('qr-carteirinha')), findsOneWidget);
+    expect(find.text('Gerar novo código'), findsNothing);
   });
 
-  testWidgets('sem conexão, avisa e tira o QR expirado da tela', (tester) async {
+  testWidgets('sem conexão ao atualizar, avisa e mantém a carteirinha', (tester) async {
     final area = AreaMembroRepositorioMock();
     await entrarComoMembro(tester, area);
     area.semConexao = true;
 
-    // A renovação falha 15 s antes do fim; o app avisa e espera antes de tentar de novo.
-    await tester.pump(const Duration(minutes: 4, seconds: 46));
-    await tester.pump();
-    expect(find.textContaining('Não foi possível atualizar a carteirinha'), findsOneWidget);
-    final tentativas = area.buscas;
-    await tester.pump(const Duration(seconds: 5));
-    expect(area.buscas, tentativas);
-
-    // Expirado, o código some até conseguir renovar.
-    await tester.pump(const Duration(seconds: 15));
-    await tester.pump();
-    expect(find.byKey(const Key('aviso-qr')), findsOneWidget);
-    expect(find.byKey(const Key('qr-carteirinha')), findsNothing);
-
-    // A conexão volta: na próxima tentativa automática, o QR reaparece.
-    area.semConexao = false;
-    for (var i = 0; i < 25; i++) {
-      await tester.pump(const Duration(seconds: 1));
-    }
+    await tester.fling(find.byType(ListView).first, const Offset(0, 400), 1000);
     await tester.pumpAndSettle();
+    expect(find.textContaining('Não foi possível atualizar a carteirinha'), findsOneWidget);
     expect(find.byKey(const Key('qr-carteirinha')), findsOneWidget);
   });
 

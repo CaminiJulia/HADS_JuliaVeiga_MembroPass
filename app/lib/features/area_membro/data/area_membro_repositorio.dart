@@ -45,7 +45,7 @@ class AreaMembroRepositorioMock implements AreaMembroRepositorio {
   StatusCarteirinha status;
   int diasParaVencer;
 
-  /// Quantas vezes a carteirinha foi buscada (o QR é renovado a cada busca).
+  /// Quantas vezes a carteirinha foi buscada.
   int buscas = 0;
 
   /// Simula a falta de conexão nas próximas buscas.
@@ -68,8 +68,7 @@ class AreaMembroRepositorioMock implements AreaMembroRepositorio {
       status: status,
       dataEmissao: hoje.subtract(const Duration(days: 10)),
       dataVencimento: hoje.add(Duration(days: diasParaVencer)),
-      qrCodigo: ativa ? 'qr-de-teste-$buscas' : null,
-      qrExpiraEm: ativa ? DateTime.now().add(const Duration(minutes: 5)) : null,
+      qrCodigo: ativa ? 'qr-de-teste' : null,
     );
   }
 

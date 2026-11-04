@@ -44,7 +44,7 @@ bloqueia nem libera de forma automática.
 | Benefícios | RF08 | ✅ Com vigência e planos com direito |
 | Unidades e eventos | RF11 | ✅ Com período (eventos) e planos aceitos |
 | Identidade visual | RF17 | ✅ Logo, cor com verificação de contraste e prévia |
-| Área do membro (carteirinha com QR e benefícios) | RF05, RF09 | ✅ QR assinado que se renova a cada 5 min; benefícios e locais do plano |
+| Área do membro (carteirinha com QR e benefícios) | RF05, RF09 | ✅ Carteirinha vertical com foto e QR fixo assinado; benefícios e locais do plano |
 | Check-in pelo operador | RF10 | ⬜ A fazer |
 
 ## 🏗️ Arquitetura

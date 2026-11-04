@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
 
@@ -123,56 +122,27 @@ class _AbaCarteirinha extends StatefulWidget {
 class _AbaCarteirinhaState extends State<_AbaCarteirinha> {
   CarteirinhaMembro? _carteirinha;
   String? _erro;
-  bool _renovando = false;
-
-  /// Atualiza a contagem do QR a cada segundo e pede um novo antes de expirar.
-  Timer? _relogio;
-
-  /// Segundos até o QR atual expirar, contados pelo próprio timer.
-  int _restante = 0;
-
-  /// Depois de uma falha, espera este tanto (em segundos) antes de tentar de novo.
-  int _esperaNovaTentativa = 0;
-
   bool _salvandoFoto = false;
 
   @override
   void initState() {
     super.initState();
     _carregar();
-    _relogio = Timer.periodic(const Duration(seconds: 1), (_) => _aCadaSegundo());
   }
 
-  @override
-  void dispose() {
-    _relogio?.cancel();
-    super.dispose();
-  }
-
+  /// Busca a carteirinha. O QR Code é fixo: só muda quando a administração
+  /// bloqueia, desativa ou libera um novo ciclo.
   Future<void> _carregar() async {
-    setState(() {
-      _erro = null;
-      _renovando = true;
-    });
+    setState(() => _erro = null);
     try {
       final c = await context.read<AreaMembroRepositorio>().carteirinha();
-      if (mounted) {
-        setState(() {
-          _carteirinha = c;
-          _restante = c.qrExpiraEm?.difference(DateTime.now()).inSeconds ?? 0;
-        });
-      }
+      if (mounted) setState(() => _carteirinha = c);
     } catch (e) {
       if (!mounted) return;
       final mensagem = mensagemDeErro(e);
-      setState(() {
-        _erro = mensagem;
-        _esperaNovaTentativa = 20;
-      });
+      setState(() => _erro = mensagem);
       // Com a carteirinha já na tela, avisa sem tirar o que está sendo mostrado.
       if (_carteirinha != null) avisar(context, 'Não foi possível atualizar a carteirinha. $mensagem');
-    } finally {
-      if (mounted) setState(() => _renovando = false);
     }
   }
 
@@ -231,26 +201,13 @@ class _AbaCarteirinhaState extends State<_AbaCarteirinha> {
     try {
       final c = await context.read<AreaMembroRepositorio>().salvarFoto(foto, tipo: tipo);
       if (!mounted) return;
-      setState(() {
-        _carteirinha = c;
-        _restante = c.qrExpiraEm?.difference(DateTime.now()).inSeconds ?? 0;
-      });
+      setState(() => _carteirinha = c);
       avisar(context, foto == null ? 'Foto removida.' : 'Foto atualizada na carteirinha.');
     } catch (e) {
       if (mounted) avisar(context, mensagemDeErro(e));
     } finally {
       if (mounted) setState(() => _salvandoFoto = false);
     }
-  }
-
-  void _aCadaSegundo() {
-    if (_carteirinha?.qrCodigo == null || !mounted) return;
-    setState(() {
-      _restante--;
-      if (_esperaNovaTentativa > 0) _esperaNovaTentativa--;
-    });
-    // Renova com folga, para o operador nunca ler um código no limite.
-    if (!_renovando && _esperaNovaTentativa == 0 && _restante <= 15) _carregar();
   }
 
   @override
@@ -266,11 +223,10 @@ class _AbaCarteirinhaState extends State<_AbaCarteirinha> {
     final cor = Contraste.lerHex(org?.corPrincipal ?? '') ?? Cores.marca;
     final hoje = Datas.hoje();
     final situacao = c.situacao(hoje);
-    final expirado = !situacao.semQr && _restante <= 0;
     final avisoQr = switch (situacao) {
       SituacaoCarteirinha.bloqueada => 'Carteirinha bloqueada.\nCheck‑in indisponível.',
       SituacaoCarteirinha.invalidada => 'Carteirinha inativa.\nCheck‑in indisponível.',
-      _ => expirado ? 'Código expirado.\nVerifique a conexão.' : null,
+      _ => null,
     };
     // Em dia, a própria carteirinha já diz a validade; o aviso só aparece
     // quando há algo a fazer.
@@ -302,7 +258,7 @@ class _AbaCarteirinhaState extends State<_AbaCarteirinha> {
       builder: (context, restricoes) {
         // A carteirinha ocupa quase a tela toda: o maior tamanho que cabe na
         // altura, descontando o aviso e a linha de baixo.
-        final reserva = 32 + 52 + (mostrarAviso ? 104 : 0) + (c.foto == null ? 30 : 0);
+        final reserva = 32 + (mostrarAviso ? 104 : 0) + (c.foto == null ? 30 : 0);
         final pelaAltura = (restricoes.maxHeight - reserva) * PreviaCarteirinha.proporcao;
         final largura = min(min(restricoes.maxWidth - 32, 440.0), max(pelaAltura, 240.0));
 
@@ -327,35 +283,11 @@ class _AbaCarteirinhaState extends State<_AbaCarteirinha> {
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ),
-              if (!situacao.semQr)
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.autorenew, size: 16, color: Cores.textoSecundario),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          expirado ? 'Código expirado' : 'Novo código em ${_contagem(_restante)}',
-                          key: const Key('contagem-qr'),
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ),
-                      TextButton(onPressed: _renovando ? null : _carregar, child: const Text('Gerar novo código')),
-                    ],
-                  ),
-                ),
             ],
           ),
         );
       },
     );
-  }
-
-  static String _contagem(int segundos) {
-    final s = segundos.clamp(0, 9999);
-    return '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}';
   }
 }
 
