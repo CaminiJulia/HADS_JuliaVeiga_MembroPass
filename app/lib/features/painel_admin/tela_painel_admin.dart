@@ -11,6 +11,8 @@ import '../auth/domain/usuario.dart';
 import '../auth/presentation/sair.dart';
 import '../membros/domain/membro.dart';
 import '../membros/domain/membros_repositorio.dart';
+import '../perfil/domain/perfil.dart';
+import '../perfil/presentation/avatar_perfil.dart';
 
 /// Tela inicial do administrador: resumo dos membros, atalhos para cada
 /// seção e o contato do suporte (RF18).
@@ -30,6 +32,10 @@ class TelaPainelAdmin extends StatefulWidget {
     _Secao('Histórico de ações', 'Auditoria da organização', Icons.history, Rotas.auditoria),
   ];
 
+  static const _conta = [
+    _Secao('Meu perfil', 'Foto, dados de contato e senha', Icons.account_circle_outlined, Rotas.perfil),
+  ];
+
   @override
   State<TelaPainelAdmin> createState() => _TelaPainelAdminState();
 }
@@ -38,10 +44,23 @@ class _TelaPainelAdminState extends State<TelaPainelAdmin> {
   /// `null` enquanto carrega ou se não foi possível carregar.
   Map<SituacaoMembro, int>? _contagem;
 
+  /// Foto e nome atualizados do administrador; `null` até carregar.
+  Perfil? _perfil;
+
   @override
   void initState() {
     super.initState();
     _carregarResumo();
+    _carregarPerfil();
+  }
+
+  Future<void> _carregarPerfil() async {
+    try {
+      final perfil = await context.read<PerfilRepositorio>().buscar();
+      if (mounted) setState(() => _perfil = perfil);
+    } catch (_) {
+      // Sem o perfil, o cabeçalho usa os dados do login.
+    }
   }
 
   Future<void> _carregarResumo() async {
@@ -62,7 +81,8 @@ class _TelaPainelAdminState extends State<TelaPainelAdmin> {
   /// Abre uma seção e, na volta, atualiza o resumo.
   Future<void> _abrir(String rota) async {
     await Navigator.of(context).pushNamed(rota);
-    if (mounted) await _carregarResumo();
+    if (!mounted) return;
+    await Future.wait([_carregarResumo(), _carregarPerfil()]);
   }
 
   @override
@@ -75,7 +95,7 @@ class _TelaPainelAdminState extends State<TelaPainelAdmin> {
         edgeOffset: 120,
         child: CustomScrollView(
           slivers: [
-            _Cabecalho(usuario: usuario),
+            _Cabecalho(usuario: usuario, perfil: _perfil, aoAbrirPerfil: () => _abrir(Rotas.perfil)),
             SliverToBoxAdapter(
               child: Center(
                 child: ConstrainedBox(
@@ -90,6 +110,8 @@ class _TelaPainelAdminState extends State<TelaPainelAdmin> {
                         _GrupoSecoes(secoes: TelaPainelAdmin._associacao, aoAbrir: _abrir),
                         const _TituloGrupo('Organização'),
                         _GrupoSecoes(secoes: TelaPainelAdmin._organizacao, aoAbrir: _abrir),
+                        const _TituloGrupo('Conta'),
+                        _GrupoSecoes(secoes: TelaPainelAdmin._conta, aoAbrir: _abrir),
                         const SizedBox(height: 24),
                         const _CartaoSuporte(),
                       ],
@@ -108,14 +130,18 @@ class _TelaPainelAdminState extends State<TelaPainelAdmin> {
 /// Cabeçalho com a marca que encolhe ao rolar, mantendo o nome da organização
 /// e o botão de sair sempre visíveis.
 class _Cabecalho extends StatelessWidget {
-  const _Cabecalho({required this.usuario});
+  const _Cabecalho({required this.usuario, required this.perfil, required this.aoAbrirPerfil});
 
   final Usuario? usuario;
+  final Perfil? perfil;
+  final VoidCallback aoAbrirPerfil;
 
   @override
   Widget build(BuildContext context) {
     final texto = Theme.of(context).textTheme;
-    final primeiroNome = usuario?.nome.split(' ').first;
+    final nome = perfil?.nome ?? usuario?.nome;
+    final primeiroNome = nome?.split(' ').first;
+    final iniciais = Perfil(id: '', nome: nome ?? '', email: '', organizacaoNome: '').iniciais;
 
     return SliverAppBar(
       pinned: true,
@@ -126,10 +152,26 @@ class _Cabecalho extends StatelessWidget {
       systemOverlayStyle: SystemUiOverlayStyle.light,
       actions: [
         IconButton(tooltip: 'Sair', icon: const Icon(Icons.logout), onPressed: () => sairDaConta(context)),
-        const SizedBox(width: 4),
+        Semantics(
+          button: true,
+          label: 'Meu perfil',
+          excludeSemantics: true,
+          child: Tooltip(
+            message: 'Meu perfil',
+            child: InkWell(
+              onTap: aoAbrirPerfil,
+              customBorder: const CircleBorder(),
+              child: Padding(
+                padding: const EdgeInsets.all(6),
+                child: AvatarPerfil(iniciais: iniciais, foto: perfil?.foto, tamanho: 36, borda: true),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
       ],
       flexibleSpace: FlexibleSpaceBar(
-        titlePadding: const EdgeInsetsDirectional.only(start: 20, bottom: 16, end: 64),
+        titlePadding: const EdgeInsetsDirectional.only(start: 20, bottom: 16, end: 112),
         expandedTitleScale: 1.45,
         title: Text(
           usuario?.organizacaoNome ?? '',
@@ -148,7 +190,7 @@ class _Cabecalho extends StatelessWidget {
           child: SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 72, 0),
+              padding: const EdgeInsets.fromLTRB(20, 14, 120, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

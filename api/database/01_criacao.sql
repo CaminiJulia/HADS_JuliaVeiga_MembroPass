@@ -36,7 +36,13 @@ CREATE TABLE administrador (
     nome            VARCHAR(150) NOT NULL,
     email           VARCHAR(255) NOT NULL,
     senha_hash      VARCHAR(255) NOT NULL,
-    status          status_cadastro NOT NULL DEFAULT 'ATIVO'
+    status          status_cadastro NOT NULL DEFAULT 'ATIVO',
+    -- Perfil: dados de contato e foto, editados pelo próprio administrador.
+    telefone        VARCHAR(20),
+    cargo           VARCHAR(80),
+    foto            BYTEA CHECK (octet_length(foto) <= 524288),
+    foto_tipo       VARCHAR(20) CHECK (foto_tipo IN ('image/png', 'image/jpeg')),
+    CHECK ((foto IS NULL) = (foto_tipo IS NULL))
 );
 
 CREATE TABLE operador (
