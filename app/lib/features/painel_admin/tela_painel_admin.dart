@@ -152,26 +152,10 @@ class _Cabecalho extends StatelessWidget {
       systemOverlayStyle: SystemUiOverlayStyle.light,
       actions: [
         IconButton(tooltip: 'Sair', icon: const Icon(Icons.logout), onPressed: () => sairDaConta(context)),
-        Semantics(
-          button: true,
-          label: 'Meu perfil',
-          excludeSemantics: true,
-          child: Tooltip(
-            message: 'Meu perfil',
-            child: InkWell(
-              onTap: aoAbrirPerfil,
-              customBorder: const CircleBorder(),
-              child: Padding(
-                padding: const EdgeInsets.all(6),
-                child: AvatarPerfil(iniciais: iniciais, foto: perfil?.foto, tamanho: 36, borda: true),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 4),
       ],
       flexibleSpace: FlexibleSpaceBar(
-        titlePadding: const EdgeInsetsDirectional.only(start: 20, bottom: 16, end: 112),
+        titlePadding: const EdgeInsetsDirectional.only(start: 20, bottom: 16, end: 64),
         expandedTitleScale: 1.45,
         title: Text(
           usuario?.organizacaoNome ?? '',
@@ -190,23 +174,57 @@ class _Cabecalho extends StatelessWidget {
           child: SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 120, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'PAINEL DA ORGANIZAÇÃO',
-                    style: texto.labelSmall?.copyWith(
-                      color: Cores.lilas,
-                      letterSpacing: 1.2,
-                      fontWeight: FontWeight.w700,
+              padding: const EdgeInsets.fromLTRB(16, 0, 72, 0),
+              // No topo, alinhado com o botão de sair.
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: Row(
+                  children: [
+                    // Avatar à esquerda, ao lado da saudação: abre o perfil.
+                    Semantics(
+                      button: true,
+                      label: 'Meu perfil',
+                      excludeSemantics: true,
+                      child: Tooltip(
+                        message: 'Meu perfil',
+                        child: InkWell(
+                          onTap: aoAbrirPerfil,
+                          customBorder: const CircleBorder(),
+                          child: Padding(
+                            padding: const EdgeInsets.all(4),
+                            child: AvatarPerfil(iniciais: iniciais, foto: perfil?.foto, tamanho: 48, borda: true),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                  if (primeiroNome != null) ...[
-                    const SizedBox(height: 6),
-                    Text('Olá, $primeiroNome', style: texto.bodyLarge?.copyWith(color: Colors.white70)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'PAINEL DA ORGANIZAÇÃO',
+                            style: texto.labelSmall?.copyWith(
+                              color: Cores.lilas,
+                              letterSpacing: 1.2,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          if (primeiroNome != null) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              'Olá, $primeiroNome',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: texto.bodyLarge?.copyWith(color: Colors.white70),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
                   ],
-                ],
+                ),
               ),
             ),
           ),

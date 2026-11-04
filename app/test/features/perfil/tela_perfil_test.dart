@@ -10,7 +10,7 @@ void main() {
     await entrarComoAdmin(tester);
     expect(find.text('AA'), findsOneWidget); // iniciais de Ana Administradora
 
-    await tester.tap(find.bySemanticsLabel('Meu perfil'));
+    await tester.tap(find.byTooltip('Meu perfil'));
     await tester.pumpAndSettle();
     expect(find.text('Meu perfil'), findsOneWidget);
     expect(find.text('Ana Administradora'), findsWidgets); // título e campo do nome
