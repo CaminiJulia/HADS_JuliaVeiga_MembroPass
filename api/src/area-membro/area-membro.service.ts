@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { BancoService } from '../banco/banco.service';
 import { Datas } from '../comum/datas';
+import { CompletarCadastroDto } from './dto/completar-cadastro.dto';
 import { SalvarFotoDto } from './dto/salvar-foto.dto';
 import { QrCarteirinha } from './qr-carteirinha';
 
@@ -24,6 +25,24 @@ interface LinhaCarteirinha {
   data_emissao: string;
   data_vencimento: string;
   qr_versao: number;
+  cadastro_confirmado_em: Date | null;
+}
+
+interface LinhaCadastro {
+  nome: string;
+  email: string;
+  telefone: string | null;
+  data_nascimento: string | null;
+  cep: string | null;
+  logradouro: string | null;
+  numero: string | null;
+  complemento: string | null;
+  bairro: string | null;
+  cidade: string | null;
+  uf: string | null;
+  foto: Buffer | null;
+  foto_tipo: string | null;
+  cadastro_confirmado_em: Date | null;
 }
 
 interface LinhaBeneficio {
@@ -63,7 +82,8 @@ export class AreaMembroService {
     const [l] = await this.banco.consultar<LinhaCarteirinha>(
       `SELECT m.nome AS membro_nome, m.email AS membro_email, m.data_adesao, m.foto, m.foto_tipo,
               p.id AS plano_id, p.nome AS plano_nome, p.cor AS plano_cor,
-              c.id AS carteirinha_id, c.status, c.data_emissao, c.data_vencimento, c.qr_versao
+              c.id AS carteirinha_id, c.status, c.data_emissao, c.data_vencimento, c.qr_versao,
+              m.cadastro_confirmado_em
        FROM membro m
        JOIN plano_associacao p ON p.id = m.plano_id
        JOIN carteirinha c ON c.membro_id = m.id
@@ -74,8 +94,9 @@ export class AreaMembroService {
 
     // O sistema nunca bloqueia sozinho: vencida, mas ativa, ainda tem QR.
     // Só a administração bloqueia ou invalida, e aí o QR deixa de existir.
+    // Antes de o membro confirmar o cadastro, também não há QR.
     const qr =
-      l.status === 'ATIVA'
+      l.status === 'ATIVA' && l.cadastro_confirmado_em
         ? await this.qr.gerar({
             c: l.carteirinha_id,
             v: l.qr_versao,
@@ -122,6 +143,85 @@ export class AreaMembroService {
     if (linhas.length === 0)
       throw new NotFoundException('Membro não encontrado.');
     return this.carteirinha(membroId, organizacaoId);
+  }
+
+  // Dados do primeiro acesso, que o próprio membro preenche e confirma.
+  async cadastro(membroId: string, organizacaoId: string) {
+    const [l] = await this.banco.consultar<LinhaCadastro>(
+      `SELECT nome, email, telefone, data_nascimento, cep, logradouro, numero, complemento,
+              bairro, cidade, uf, foto, foto_tipo, cadastro_confirmado_em
+       FROM membro WHERE id = $1 AND organizacao_id = $2 AND status = 'ATIVO'`,
+      [membroId, organizacaoId],
+    );
+    if (!l) throw new NotFoundException('Membro não encontrado.');
+    return {
+      nome: l.nome,
+      email: l.email,
+      telefone: l.telefone,
+      dataNascimento: l.data_nascimento,
+      endereco: {
+        cep: l.cep,
+        logradouro: l.logradouro,
+        numero: l.numero,
+        complemento: l.complemento,
+        bairro: l.bairro,
+        cidade: l.cidade,
+        uf: l.uf,
+      },
+      foto: l.foto ? l.foto.toString('base64') : null,
+      fotoTipo: l.foto_tipo,
+      confirmadoEm: l.cadastro_confirmado_em,
+    };
+  }
+
+  // Grava os dados e a declaração de que são verdadeiros. A foto é obrigatória:
+  // pode vir agora ou já estar salva.
+  async completarCadastro(
+    membroId: string,
+    organizacaoId: string,
+    d: CompletarCadastroDto,
+  ) {
+    const foto = d.foto ? Buffer.from(d.foto, 'base64') : null;
+    if (foto && foto.length > TAMANHO_MAXIMO_FOTO) {
+      throw new BadRequestException('A foto pode ter no máximo 512 KB.');
+    }
+    const hoje = Datas.hoje();
+    if (d.dataNascimento >= hoje || d.dataNascimento < '1900-01-02') {
+      throw new BadRequestException('Informe uma data de nascimento válida.');
+    }
+    const cep = d.cep.replace(/\D/g, '');
+
+    const linhas = await this.banco.consultar<{ tem_foto: boolean }>(
+      `UPDATE membro SET
+         nome = $3, telefone = $4, data_nascimento = $5,
+         cep = $6, logradouro = $7, numero = $8, complemento = $9,
+         bairro = $10, cidade = $11, uf = $12,
+         foto = COALESCE($13, foto), foto_tipo = COALESCE($14, foto_tipo),
+         cadastro_confirmado_em = CASE WHEN COALESCE($13, foto) IS NULL THEN cadastro_confirmado_em ELSE now() END
+       WHERE id = $1 AND organizacao_id = $2 AND status = 'ATIVO'
+       RETURNING foto IS NOT NULL AS tem_foto`,
+      [
+        membroId,
+        organizacaoId,
+        d.nome,
+        d.telefone,
+        d.dataNascimento,
+        `${cep.slice(0, 5)}-${cep.slice(5)}`,
+        d.logradouro,
+        d.numero,
+        d.complemento ?? null,
+        d.bairro,
+        d.cidade,
+        d.uf,
+        foto,
+        foto ? d.fotoTipo : null,
+      ],
+    );
+    if (linhas.length === 0)
+      throw new NotFoundException('Membro não encontrado.');
+    if (!linhas[0].tem_foto)
+      throw new BadRequestException('Escolha uma foto para a carteirinha.');
+    return this.cadastro(membroId, organizacaoId);
   }
 
   // Benefícios do plano do membro que estão vigentes hoje.

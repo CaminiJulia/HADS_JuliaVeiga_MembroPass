@@ -83,8 +83,124 @@ class CarteirinhaMembro {
   }
 }
 
+/// Endereço informado pelo membro no primeiro acesso.
+class EnderecoMembro {
+  const EnderecoMembro({
+    required this.cep,
+    required this.logradouro,
+    required this.numero,
+    required this.bairro,
+    required this.cidade,
+    required this.uf,
+    this.complemento,
+  });
+
+  /// Endereço vazio, se ainda não foi preenchido.
+  static EnderecoMembro? deJson(Map<String, dynamic>? json) {
+    if (json == null || json['cep'] == null) return null;
+    return EnderecoMembro(
+      cep: json['cep'] as String,
+      logradouro: json['logradouro'] as String,
+      numero: json['numero'] as String,
+      complemento: json['complemento'] as String?,
+      bairro: json['bairro'] as String,
+      cidade: json['cidade'] as String,
+      uf: json['uf'] as String,
+    );
+  }
+
+  final String cep;
+  final String logradouro;
+  final String numero;
+  final String? complemento;
+  final String bairro;
+  final String cidade;
+  final String uf;
+
+  Map<String, dynamic> paraJson() => {
+    'cep': cep,
+    'logradouro': logradouro,
+    'numero': numero,
+    'complemento': complemento,
+    'bairro': bairro,
+    'cidade': cidade,
+    'uf': uf,
+  };
+}
+
+/// Dados pessoais do membro, preenchidos e confirmados por ele no primeiro acesso.
+class CadastroMembro {
+  const CadastroMembro({
+    required this.nome,
+    required this.email,
+    this.telefone,
+    this.dataNascimento,
+    this.endereco,
+    this.foto,
+    this.confirmadoEm,
+  });
+
+  factory CadastroMembro.deJson(Map<String, dynamic> json) => CadastroMembro(
+    nome: json['nome'] as String,
+    email: json['email'] as String,
+    telefone: json['telefone'] as String?,
+    dataNascimento: Datas.daApi(json['dataNascimento'] as String?),
+    endereco: EnderecoMembro.deJson(json['endereco'] as Map<String, dynamic>?),
+    foto: json['foto'] == null ? null : base64Decode(json['foto'] as String),
+    confirmadoEm: json['confirmadoEm'] == null ? null : DateTime.parse(json['confirmadoEm'] as String),
+  );
+
+  final String nome;
+  final String email;
+  final String? telefone;
+  final DateTime? dataNascimento;
+  final EnderecoMembro? endereco;
+  final Uint8List? foto;
+
+  /// Quando o membro declarou que os dados são verdadeiros; `null` no primeiro acesso.
+  final DateTime? confirmadoEm;
+
+  bool get pendente => confirmadoEm == null;
+}
+
+/// O que o membro envia ao concluir o cadastro. [foto] `null` mantém a atual.
+class DadosCadastroMembro {
+  const DadosCadastroMembro({
+    required this.nome,
+    required this.telefone,
+    required this.dataNascimento,
+    required this.endereco,
+    this.foto,
+    this.fotoTipo,
+  });
+
+  final String nome;
+  final String telefone;
+  final DateTime dataNascimento;
+  final EnderecoMembro endereco;
+  final Uint8List? foto;
+  final String? fotoTipo;
+
+  Map<String, dynamic> paraJson() => {
+    'nome': nome,
+    'telefone': telefone,
+    'dataNascimento': Datas.paraApi(dataNascimento),
+    ...endereco.paraJson(),
+    if (foto != null) 'foto': base64Encode(foto!),
+    if (foto != null) 'fotoTipo': fotoTipo,
+    // O formulário só envia depois de o membro marcar a declaração.
+    'declaracao': true,
+  };
+}
+
 /// O que o membro logado vê: a própria carteirinha, benefícios e locais.
 abstract interface class AreaMembroRepositorio {
+  /// Dados pessoais e se o primeiro acesso já foi concluído.
+  Future<CadastroMembro> cadastro();
+
+  /// Grava os dados do primeiro acesso, com a declaração de veracidade.
+  Future<CadastroMembro> completarCadastro(DadosCadastroMembro dados);
+
   Future<CarteirinhaMembro> carteirinha();
 
   /// Troca (ou remove, com `null`) a foto da carteirinha.

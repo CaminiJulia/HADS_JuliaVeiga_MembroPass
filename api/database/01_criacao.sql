@@ -83,6 +83,18 @@ CREATE TABLE membro (
     -- Foto da carteirinha, enviada pelo próprio membro no app.
     foto            BYTEA CHECK (octet_length(foto) <= 524288),
     foto_tipo       VARCHAR(20) CHECK (foto_tipo IN ('image/png', 'image/jpeg')),
+    -- Dados que o próprio membro preenche no primeiro acesso ao app.
+    data_nascimento DATE CHECK (data_nascimento > DATE '1900-01-01'),
+    cep             VARCHAR(9),
+    logradouro      VARCHAR(150),
+    numero          VARCHAR(10),
+    complemento     VARCHAR(80),
+    bairro          VARCHAR(80),
+    cidade          VARCHAR(80),
+    uf              CHAR(2),
+    -- Quando o membro confirmou que os dados são verdadeiros. NULL: o app
+    -- pede o cadastro antes de mostrar a carteirinha (e a API não gera o QR).
+    cadastro_confirmado_em TIMESTAMPTZ,
     CHECK ((foto IS NULL) = (foto_tipo IS NULL))
 );
 

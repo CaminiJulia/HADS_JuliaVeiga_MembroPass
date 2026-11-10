@@ -18,7 +18,9 @@ então cada usuário só enxerga e altera os dados da própria organização.
 | `GET` | `/perfil` | admin | Dados da própria conta: nome, e-mail, telefone, cargo e foto |
 | `PUT` | `/perfil` | admin | Nome, telefone, cargo e foto em base64 (até 512 KB) |
 | `PUT` | `/perfil/senha` | admin | Troca a senha, confirmando a atual (mínimo 8 caracteres, com letras e números) |
-| `GET` | `/membro/carteirinha` | membro | Carteirinha do membro logado, com QR Code fixo assinado (muda ao bloquear, desativar ou liberar ciclo; ausente se bloqueada) |
+| `GET` | `/membro/cadastro` | membro | Dados pessoais e endereço do membro; `confirmadoEm` nulo indica primeiro acesso pendente |
+| `PUT` | `/membro/cadastro` | membro | Conclui o primeiro acesso: nome, celular, nascimento, endereço, foto (obrigatória) e `declaracao: true` de que os dados são verdadeiros |
+| `GET` | `/membro/carteirinha` | membro | Carteirinha do membro logado, com QR Code fixo assinado (muda ao bloquear, desativar ou liberar ciclo; ausente se bloqueada ou com o cadastro pendente) |
 | `PUT` | `/membro/foto` | membro | Foto da carteirinha em base64 (até 512 KB), enviada pelo próprio membro; `null` remove |
 | `GET` | `/membro/beneficios` | membro | Benefícios vigentes do plano do membro |
 | `GET` | `/membro/locais` | membro | Unidades e eventos (não encerrados) que aceitam o plano |

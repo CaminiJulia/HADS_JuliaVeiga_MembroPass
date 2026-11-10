@@ -16,6 +16,7 @@ import '../../identidade/domain/organizacao.dart';
 import '../../identidade/presentation/previa_carteirinha.dart';
 import '../../unidades/domain/unidade_evento.dart';
 import '../domain/carteirinha_membro.dart';
+import 'tela_primeiro_acesso.dart';
 
 /// Área do membro (RF05 e RF09): carteirinha com QR Code, benefícios do plano
 /// e os locais onde a carteirinha é aceita.
@@ -30,10 +31,26 @@ class _TelaAreaMembroState extends State<TelaAreaMembro> {
   int _aba = 0;
   Organizacao? _organizacao;
 
+  /// Dados do membro; enquanto o primeiro acesso não é concluído, a área
+  /// mostra o formulário de cadastro no lugar da carteirinha.
+  CadastroMembro? _cadastro;
+  String? _erroCadastro;
+
   @override
   void initState() {
     super.initState();
     _carregarOrganizacao();
+    _carregarCadastro();
+  }
+
+  Future<void> _carregarCadastro() async {
+    setState(() => _erroCadastro = null);
+    try {
+      final cadastro = await context.read<AreaMembroRepositorio>().cadastro();
+      if (mounted) setState(() => _cadastro = cadastro);
+    } catch (e) {
+      if (mounted) setState(() => _erroCadastro = mensagemDeErro(e));
+    }
   }
 
   Future<void> _carregarOrganizacao() async {
@@ -57,6 +74,21 @@ class _TelaAreaMembroState extends State<TelaAreaMembro> {
 
   @override
   Widget build(BuildContext context) {
+    final cadastro = _cadastro;
+    if (cadastro == null) {
+      return Scaffold(
+        appBar: AppBar(
+          actions: [IconButton(tooltip: 'Sair', icon: const Icon(Icons.logout), onPressed: _sair)],
+        ),
+        body: _erroCadastro != null
+            ? AvisoTela(icone: Icons.cloud_off, texto: _erroCadastro!, aoTentarDeNovo: _carregarCadastro)
+            : const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (cadastro.pendente) {
+      return TelaPrimeiroAcesso(cadastro: cadastro, aoSair: _sair, aoConcluir: (c) => setState(() => _cadastro = c));
+    }
+
     final org = _organizacao;
     return Scaffold(
       appBar: AppBar(
