@@ -228,6 +228,31 @@ void main() {
     expect(find.text('Sede Central'), findsOneWidget);
   });
 
+  testWidgets('benefício como cupom: detalhes e atalho para a carteirinha', (tester) async {
+    await entrarComoMembro(tester);
+    await tester.tap(find.text('Benefícios'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Seus benefícios'), findsOneWidget);
+    expect(find.text('1 vantagem exclusiva no seu plano'), findsOneWidget);
+    expect(find.text('15%'), findsOneWidget);
+    expect(find.text('OFF'), findsOneWidget);
+
+    await tester.tap(find.text('Desconto na farmácia'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('detalhes-beneficio')), findsOneWidget);
+    expect(find.text('15% de desconto'), findsOneWidget);
+    expect(find.text('Como usar'), findsOneWidget);
+    expect(find.text('Vá até Farmácia Central.'), findsOneWidget);
+
+    await tester.ensureVisible(find.byKey(const Key('detalhes-mostrar-carteirinha')));
+    await tester.tap(find.byKey(const Key('detalhes-mostrar-carteirinha')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('detalhes-beneficio')), findsNothing);
+    // De volta à aba da carteirinha, com o QR Code visível.
+    expect(find.byKey(const Key('qr-carteirinha')).hitTestable(), findsOneWidget);
+  });
+
   testWidgets('sair pede confirmação', (tester) async {
     await entrarComoMembro(tester);
 

@@ -11,12 +11,11 @@ import '../../../core/tema/contraste.dart';
 import '../../../core/tema/cores.dart';
 import '../../../core/widgets/componentes.dart';
 import '../../auth/presentation/sair.dart';
-import '../../beneficios/domain/beneficio.dart';
-import '../../beneficios/presentation/cartao_beneficio.dart';
 import '../../identidade/domain/organizacao.dart';
 import '../../identidade/presentation/previa_carteirinha.dart';
 import '../../unidades/domain/unidade_evento.dart';
 import '../domain/carteirinha_membro.dart';
+import 'aba_beneficios_membro.dart';
 import 'tela_primeiro_acesso.dart';
 
 /// Área do membro (RF05 e RF09): carteirinha com QR Code, benefícios do plano
@@ -123,7 +122,7 @@ class _TelaAreaMembroState extends State<TelaAreaMembro> {
         index: _aba,
         children: [
           _AbaCarteirinha(organizacao: org),
-          const _AbaBeneficios(),
+          AbaBeneficiosMembro(organizacao: org, aoMostrarCarteirinha: () => setState(() => _aba = 0)),
           const _AbaLocais(),
         ],
       ),
@@ -577,22 +576,6 @@ class _AbaListaState<T> extends State<_AbaLista<T>> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _AbaBeneficios extends StatelessWidget {
-  const _AbaBeneficios();
-
-  @override
-  Widget build(BuildContext context) {
-    return _AbaLista<Beneficio>(
-      buscar: (r) => r.beneficios(),
-      vazio: 'Seu plano ainda não tem benefícios disponíveis.',
-      iconeVazio: Icons.redeem_outlined,
-      cabecalho: 'Mostre sua carteirinha ao parceiro para usar o desconto.',
-      item: (b) =>
-          CartaoBeneficio(beneficio: b, situacao: SituacaoVigencia.vigente, planos: const [], mostrarPlanos: false),
     );
   }
 }
