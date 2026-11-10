@@ -134,8 +134,17 @@ class AreaMembroRepositorioMock implements AreaMembroRepositorio {
   ];
 
   @override
-  Future<List<UnidadeEvento>> locais() async => const [
+  Future<List<UnidadeEvento>> locais() async => [
     UnidadeEvento(
+      id: 'e2',
+      nome: 'Torneio de Verão',
+      tipo: TipoLocal.evento,
+      localizacao: 'Ginásio Municipal',
+      dataInicio: Datas.hoje().add(const Duration(days: 20)),
+      dataFim: Datas.hoje().add(const Duration(days: 22)),
+      planoIds: const [],
+    ),
+    const UnidadeEvento(
       id: 'e1',
       nome: 'Sede Central',
       tipo: TipoLocal.unidade,

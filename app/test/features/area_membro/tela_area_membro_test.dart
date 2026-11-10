@@ -225,7 +225,38 @@ void main() {
 
     await tester.tap(find.text('Locais'));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Sede Central'),
+      200,
+      scrollable: find.descendant(of: find.byKey(const Key('lista-locais')), matching: find.byType(Scrollable)).first,
+    );
     expect(find.text('Sede Central'), findsOneWidget);
+  });
+
+  testWidgets('locais: eventos com contagem, filtros e detalhes', (tester) async {
+    await entrarComoMembro(tester);
+    await tester.tap(find.text('Locais'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Onde usar'), findsOneWidget);
+    expect(find.text('Torneio de Verão'), findsOneWidget);
+    expect(find.text('Em 20 dias'), findsOneWidget);
+
+    // Filtro de unidades esconde os eventos.
+    await tester.tap(find.byKey(const Key('filtro-locais-unidades')));
+    await tester.pumpAndSettle();
+    expect(find.text('Torneio de Verão'), findsNothing);
+    expect(find.text('Sede Central'), findsOneWidget);
+
+    await tester.tap(find.text('Sede Central'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('detalhes-local')), findsOneWidget);
+    expect(find.text('Na entrada'), findsOneWidget);
+
+    await tester.ensureVisible(find.byKey(const Key('local-mostrar-carteirinha')));
+    await tester.tap(find.byKey(const Key('local-mostrar-carteirinha')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('qr-carteirinha')).hitTestable(), findsOneWidget);
   });
 
   testWidgets('benefício como cupom: detalhes e atalho para a carteirinha', (tester) async {

@@ -13,9 +13,9 @@ import '../../../core/widgets/componentes.dart';
 import '../../auth/presentation/sair.dart';
 import '../../identidade/domain/organizacao.dart';
 import '../../identidade/presentation/previa_carteirinha.dart';
-import '../../unidades/domain/unidade_evento.dart';
 import '../domain/carteirinha_membro.dart';
 import 'aba_beneficios_membro.dart';
+import 'aba_locais_membro.dart';
 import 'tela_primeiro_acesso.dart';
 
 /// Área do membro (RF05 e RF09): carteirinha com QR Code, benefícios do plano
@@ -123,7 +123,7 @@ class _TelaAreaMembroState extends State<TelaAreaMembro> {
         children: [
           _AbaCarteirinha(organizacao: org),
           AbaBeneficiosMembro(organizacao: org, aoMostrarCarteirinha: () => setState(() => _aba = 0)),
-          const _AbaLocais(),
+          AbaLocaisMembro(organizacao: org, aoMostrarCarteirinha: () => setState(() => _aba = 0)),
         ],
       ),
       bottomNavigationBar: NavigationBar(
@@ -503,180 +503,6 @@ class _AvisoSituacao extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Benefícios e locais
-
-/// Carrega uma lista da área do membro com estados de carregando, erro e vazio.
-class _AbaLista<T> extends StatefulWidget {
-  const _AbaLista({
-    required this.buscar,
-    required this.vazio,
-    required this.iconeVazio,
-    required this.cabecalho,
-    required this.item,
-  });
-
-  final Future<List<T>> Function(AreaMembroRepositorio repositorio) buscar;
-  final String vazio;
-  final IconData iconeVazio;
-  final String cabecalho;
-  final Widget Function(T item) item;
-
-  @override
-  State<_AbaLista<T>> createState() => _AbaListaState<T>();
-}
-
-class _AbaListaState<T> extends State<_AbaLista<T>> {
-  List<T>? _itens;
-  String? _erro;
-
-  @override
-  void initState() {
-    super.initState();
-    _carregar();
-  }
-
-  Future<void> _carregar() async {
-    setState(() => _erro = null);
-    try {
-      final itens = await widget.buscar(context.read<AreaMembroRepositorio>());
-      if (mounted) setState(() => _itens = itens);
-    } catch (e) {
-      if (mounted) setState(() => _erro = mensagemDeErro(e));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final itens = _itens;
-    if (_erro != null) return AvisoTela(icone: Icons.cloud_off, texto: _erro!, aoTentarDeNovo: _carregar);
-    if (itens == null) return const Center(child: CircularProgressIndicator());
-    if (itens.isEmpty) return AvisoTela(icone: widget.iconeVazio, texto: widget.vazio);
-
-    return RefreshIndicator(
-      onRefresh: _carregar,
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 640),
-          child: ListView.separated(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-            itemCount: itens.length + 1,
-            separatorBuilder: (_, _) => const SizedBox(height: 12),
-            itemBuilder: (context, i) => i == 0
-                ? Padding(
-                    padding: const EdgeInsets.fromLTRB(4, 0, 4, 0),
-                    child: Text(widget.cabecalho, style: Theme.of(context).textTheme.bodyMedium),
-                  )
-                : widget.item(itens[i - 1]),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AbaLocais extends StatelessWidget {
-  const _AbaLocais();
-
-  @override
-  Widget build(BuildContext context) {
-    return _AbaLista<UnidadeEvento>(
-      buscar: (r) => r.locais(),
-      vazio: 'Ainda não há locais cadastrados para o seu plano.',
-      iconeVazio: Icons.place_outlined,
-      cabecalho: 'Onde sua carteirinha é aceita.',
-      item: (l) => _CartaoLocalMembro(l),
-    );
-  }
-}
-
-class _CartaoLocalMembro extends StatelessWidget {
-  const _CartaoLocalMembro(this.local);
-
-  final UnidadeEvento local;
-
-  @override
-  Widget build(BuildContext context) {
-    final texto = Theme.of(context).textTheme;
-    final imagem = local.imagem;
-    final localizacao = local.localizacao;
-    final periodo = local.evento && local.dataInicio != null && local.dataFim != null
-        ? Datas.periodoPorExtenso(local.dataInicio!, local.dataFim!)
-        : null;
-
-    return CartaoItem(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (imagem != null)
-            AspectRatio(
-              aspectRatio: 16 / 7,
-              child: Image.memory(imagem, fit: BoxFit.cover, semanticLabel: 'Imagem de ${local.nome}'),
-            ),
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Cores.primaria.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    local.evento ? Icons.celebration_outlined : Icons.storefront_outlined,
-                    color: Cores.primaria,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(local.nome, style: texto.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 2),
-                      Text(local.evento ? 'Evento' : 'Unidade', style: texto.labelMedium),
-                      if (periodo != null) ...[
-                        const SizedBox(height: 8),
-                        _Linha(icone: Icons.event_outlined, texto: periodo),
-                      ],
-                      if (localizacao != null) ...[
-                        const SizedBox(height: 6),
-                        _Linha(icone: Icons.place_outlined, texto: localizacao),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Linha extends StatelessWidget {
-  const _Linha({required this.icone, required this.texto});
-
-  final IconData icone;
-  final String texto;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icone, size: 16, color: Cores.textoSecundario),
-        const SizedBox(width: 6),
-        Expanded(child: Text(texto, style: Theme.of(context).textTheme.bodySmall)),
-      ],
     );
   }
 }
