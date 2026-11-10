@@ -14,11 +14,24 @@ import '../domain/carteirinha_membro.dart';
 /// preenche celular, nascimento e endereço, escolhe a foto e declara que as
 /// informações são verdadeiras.
 class TelaPrimeiroAcesso extends StatefulWidget {
-  const TelaPrimeiroAcesso({super.key, required this.cadastro, required this.aoConcluir, required this.aoSair});
+  const TelaPrimeiroAcesso({
+    super.key,
+    required this.cadastro,
+    required this.aoConcluir,
+    required this.aoSair,
+    this.aoAdiar,
+  });
 
   final CadastroMembro cadastro;
   final ValueChanged<CadastroMembro> aoConcluir;
   final VoidCallback aoSair;
+
+  /// Pula o formulário por agora; `null` quando o cadastro é obrigatório.
+  final VoidCallback? aoAdiar;
+
+  /// Por enquanto o cadastro é opcional (facilita os testes): aparece o botão
+  /// "Preencher depois". Com `true`, a carteirinha só abre após o cadastro.
+  static const obrigatorio = false;
 
   static const tamanhoMaximoFoto = 512 * 1024;
 
@@ -187,10 +200,24 @@ class _TelaPrimeiroAcessoState extends State<TelaPrimeiroAcesso> {
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-          child: FilledButton(
-            key: const Key('botao-concluir-cadastro'),
-            onPressed: _enviando || !_declarou ? null : _concluir,
-            child: _enviando ? const CarregandoBotao() : const Text('Concluir cadastro'),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              FilledButton(
+                key: const Key('botao-concluir-cadastro'),
+                onPressed: _enviando || !_declarou ? null : _concluir,
+                child: _enviando ? const CarregandoBotao() : const Text('Concluir cadastro'),
+              ),
+              if (widget.aoAdiar != null) ...[
+                const SizedBox(height: 4),
+                TextButton(
+                  key: const Key('botao-preencher-depois'),
+                  onPressed: _enviando ? null : widget.aoAdiar,
+                  child: const Text('Preencher depois'),
+                ),
+              ],
+            ],
           ),
         ),
       ),

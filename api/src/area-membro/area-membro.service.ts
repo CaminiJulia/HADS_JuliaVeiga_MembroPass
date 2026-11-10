@@ -11,6 +11,10 @@ import { QrCarteirinha } from './qr-carteirinha';
 
 const TAMANHO_MAXIMO_FOTO = 512 * 1024;
 
+// Por enquanto o cadastro do primeiro acesso é opcional (facilita os testes).
+// Com true, a carteirinha só tem QR Code depois de o membro concluir o cadastro.
+const CADASTRO_OBRIGATORIO = false;
+
 interface LinhaCarteirinha {
   membro_nome: string;
   membro_email: string;
@@ -94,9 +98,10 @@ export class AreaMembroService {
 
     // O sistema nunca bloqueia sozinho: vencida, mas ativa, ainda tem QR.
     // Só a administração bloqueia ou invalida, e aí o QR deixa de existir.
-    // Antes de o membro confirmar o cadastro, também não há QR.
+    // Com o cadastro obrigatório, antes de confirmá-lo também não há QR.
     const qr =
-      l.status === 'ATIVA' && l.cadastro_confirmado_em
+      l.status === 'ATIVA' &&
+      (l.cadastro_confirmado_em || !CADASTRO_OBRIGATORIO)
         ? await this.qr.gerar({
             c: l.carteirinha_id,
             v: l.qr_versao,

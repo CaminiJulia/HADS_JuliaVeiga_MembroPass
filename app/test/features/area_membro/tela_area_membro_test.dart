@@ -127,6 +127,18 @@ void main() {
       expect(botao.onPressed, isNull);
     });
 
+    testWidgets('por enquanto é opcional: "Preencher depois" abre a carteirinha', (tester) async {
+      final area = AreaMembroRepositorioMock(cadastroPendente: true);
+      await entrarComoMembro(tester, area);
+
+      await tester.tap(find.byKey(const Key('botao-preencher-depois')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Complete seu cadastro'), findsNothing);
+      expect(find.byKey(const Key('qr-carteirinha')), findsOneWidget);
+      expect(area.cadastroEnviado, isNull);
+    });
+
     testWidgets('máscaras e validação dos campos', (tester) async {
       await entrarComoMembro(tester, AreaMembroRepositorioMock(cadastroPendente: true));
       await rolarAte(tester, find.byKey(const Key('campo-celular-cadastro')));

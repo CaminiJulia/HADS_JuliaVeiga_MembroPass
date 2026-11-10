@@ -36,6 +36,9 @@ class _TelaAreaMembroState extends State<TelaAreaMembro> {
   CadastroMembro? _cadastro;
   String? _erroCadastro;
 
+  /// O membro tocou em "Preencher depois": o formulário volta no próximo login.
+  bool _adiouCadastro = false;
+
   @override
   void initState() {
     super.initState();
@@ -85,8 +88,13 @@ class _TelaAreaMembroState extends State<TelaAreaMembro> {
             : const Center(child: CircularProgressIndicator()),
       );
     }
-    if (cadastro.pendente) {
-      return TelaPrimeiroAcesso(cadastro: cadastro, aoSair: _sair, aoConcluir: (c) => setState(() => _cadastro = c));
+    if (cadastro.pendente && !_adiouCadastro) {
+      return TelaPrimeiroAcesso(
+        cadastro: cadastro,
+        aoSair: _sair,
+        aoConcluir: (c) => setState(() => _cadastro = c),
+        aoAdiar: TelaPrimeiroAcesso.obrigatorio ? null : () => setState(() => _adiouCadastro = true),
+      );
     }
 
     final org = _organizacao;
