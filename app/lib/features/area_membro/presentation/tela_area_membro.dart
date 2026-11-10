@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../core/formatacao/datas.dart';
 import '../../../core/tema/contraste.dart';
@@ -150,6 +151,82 @@ class _TelaAreaMembroState extends State<TelaAreaMembro> {
 // ---------------------------------------------------------------------------
 // Carteirinha
 
+/// QR Code ampliado: ocupa a largura da tela, com nome e número para o
+/// operador conferir. Toque em qualquer lugar para fechar.
+class _QrAmpliado extends StatelessWidget {
+  const _QrAmpliado({required this.codigo, required this.nome, required this.numero});
+
+  final String codigo;
+  final String nome;
+  final String numero;
+
+  @override
+  Widget build(BuildContext context) {
+    final texto = Theme.of(context).textTheme;
+    return SafeArea(
+      child: GestureDetector(
+        key: const Key('qr-ampliado'),
+        behavior: HitTestBehavior.opaque,
+        onTap: () => Navigator.pop(context),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Material(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        nome,
+                        textAlign: TextAlign.center,
+                        style: texto.titleLarge?.copyWith(color: Colors.black, fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 4),
+                      Text('Nº $numero', style: texto.titleSmall?.copyWith(color: Colors.black54, letterSpacing: 2)),
+                      const SizedBox(height: 20),
+                      // Preto no branco: o contraste máximo facilita a leitura pela câmera.
+                      // Em telas baixas (celular deitado), o QR diminui para caber.
+                      Flexible(
+                        child: AspectRatio(
+                          aspectRatio: 1,
+                          child: QrImageView(
+                            data: codigo,
+                            padding: EdgeInsets.zero,
+                            eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Colors.black),
+                            dataModuleStyle: const QrDataModuleStyle(
+                              dataModuleShape: QrDataModuleShape.square,
+                              color: Colors.black,
+                            ),
+                            semanticsLabel: 'QR Code da carteirinha ampliado',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.touch_app_outlined, size: 18, color: Colors.black45),
+                          const SizedBox(width: 6),
+                          Text('Toque para fechar', style: texto.bodySmall?.copyWith(color: Colors.black54)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _AbaCarteirinha extends StatefulWidget {
   const _AbaCarteirinha({required this.organizacao});
 
@@ -184,6 +261,27 @@ class _AbaCarteirinhaState extends State<_AbaCarteirinha> {
       // Com a carteirinha já na tela, avisa sem tirar o que está sendo mostrado.
       if (_carteirinha != null) avisar(context, 'Não foi possível atualizar a carteirinha. $mensagem');
     }
+  }
+
+  /// QR Code em tela cheia, preto no branco, para o leitor do operador.
+  void _ampliarQr(CarteirinhaMembro c) {
+    final codigo = c.qrCodigo;
+    if (codigo == null) return;
+    showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Fechar',
+      barrierColor: Colors.black.withValues(alpha: 0.85),
+      transitionDuration: const Duration(milliseconds: 220),
+      transitionBuilder: (context, animacao, _, filho) => FadeTransition(
+        opacity: animacao,
+        child: ScaleTransition(
+          scale: Tween(begin: 0.85, end: 1.0).animate(CurvedAnimation(parent: animacao, curve: Curves.easeOutBack)),
+          child: filho,
+        ),
+      ),
+      pageBuilder: (context, _, _) => _QrAmpliado(codigo: codigo, nome: c.nomeMembro, numero: c.numero),
+    );
   }
 
   Future<void> _opcoesFoto() async {
@@ -282,6 +380,7 @@ class _AbaCarteirinhaState extends State<_AbaCarteirinha> {
         nomeOrganizacao: org?.nome ?? '',
         logo: org?.logo,
         aoTocarFoto: _salvandoFoto ? null : _opcoesFoto,
+        aoTocarQr: () => _ampliarQr(c),
         dados: DadosCarteirinha(
           nomeMembro: c.nomeMembro,
           plano: 'Plano ${c.planoNome}',

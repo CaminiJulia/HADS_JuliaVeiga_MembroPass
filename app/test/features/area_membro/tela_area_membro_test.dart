@@ -57,6 +57,20 @@ void main() {
     expect(find.byKey(const Key('qr-carteirinha')), findsOneWidget);
   });
 
+  testWidgets('tocar no QR Code amplia, e tocar de novo fecha', (tester) async {
+    await entrarComoMembro(tester);
+
+    await tester.tap(find.byKey(const Key('botao-ampliar-qr')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('qr-ampliado')), findsOneWidget);
+    expect(find.text('Toque para fechar'), findsOneWidget);
+    expect(find.byType(QrImageView), findsNWidgets(2));
+
+    await tester.tap(find.byKey(const Key('qr-ampliado')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('qr-ampliado')), findsNothing);
+  });
+
   testWidgets('carteirinha bloqueada não mostra QR Code', (tester) async {
     await entrarComoMembro(tester, AreaMembroRepositorioMock(status: StatusCarteirinha.bloqueada));
 

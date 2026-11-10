@@ -54,6 +54,7 @@ class PreviaCarteirinha extends StatelessWidget {
     this.esboco = false,
     this.dados = DadosCarteirinha.exemplo,
     this.aoTocarFoto,
+    this.aoTocarQr,
   });
 
   /// Proporção em pé (largura / altura), a de um crachá.
@@ -76,6 +77,9 @@ class PreviaCarteirinha extends StatelessWidget {
 
   /// No app do membro, tocar na foto abre a troca de foto.
   final VoidCallback? aoTocarFoto;
+
+  /// No app do membro, tocar no QR Code abre ele ampliado.
+  final VoidCallback? aoTocarQr;
 
   Color get _segunda => corSecundaria ?? Color.lerp(cor, Colors.black, 0.35)!;
 
@@ -425,13 +429,21 @@ class _AreaQr extends StatelessWidget {
         semanticsLabel: 'QR Code da carteirinha',
       );
     }
+    final quadro = Container(
+      width: lado,
+      height: lado,
+      padding: EdgeInsets.all(lado * 0.07),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(lado * 0.1)),
+      child: conteudo,
+    );
+    final aoTocar = c.aoTocarQr;
+    if (aoTocar == null || codigo == null || aviso != null || c.esboco) return Center(child: quadro);
     return Center(
-      child: Container(
-        width: lado,
-        height: lado,
-        padding: EdgeInsets.all(lado * 0.07),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(lado * 0.1)),
-        child: conteudo,
+      child: Semantics(
+        container: true,
+        button: true,
+        label: 'Ampliar QR Code',
+        child: GestureDetector(key: const Key('botao-ampliar-qr'), onTap: aoTocar, child: quadro),
       ),
     );
   }
