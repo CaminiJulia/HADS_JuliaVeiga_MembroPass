@@ -284,6 +284,70 @@ void main() {
     expect(find.byKey(const Key('qr-carteirinha')).hitTestable(), findsOneWidget);
   });
 
+  group('meu perfil', () {
+    Finder lista() =>
+        find.descendant(of: find.byKey(const Key('lista-perfil-membro')), matching: find.byType(Scrollable)).first;
+
+    Future<void> abrirPerfil(WidgetTester tester, AreaMembroRepositorioMock area) async {
+      await entrarComoMembro(tester, area);
+      await tester.tap(find.text('Perfil'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('mostra dados travados e só oferece salvar depois de mudar algo', (tester) async {
+      await abrirPerfil(tester, AreaMembroRepositorioMock());
+
+      expect(find.text('Nome completo'), findsOneWidget);
+      expect(find.text('15/04/1995'), findsOneWidget);
+      expect(find.byKey(const Key('botao-salvar-perfil-membro')), findsNothing);
+
+      await tester.scrollUntilVisible(find.byKey(const Key('campo-celular-perfil')), 200, scrollable: lista());
+      await tester.enterText(find.byKey(const Key('campo-celular-perfil')), '54988887777');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('botao-salvar-perfil-membro')), findsOneWidget);
+    });
+
+    testWidgets('salva celular e endereço', (tester) async {
+      final area = AreaMembroRepositorioMock();
+      await abrirPerfil(tester, area);
+
+      await tester.scrollUntilVisible(find.byKey(const Key('campo-celular-perfil')), 200, scrollable: lista());
+      await tester.enterText(find.byKey(const Key('campo-celular-perfil')), '54988887777');
+      await tester.scrollUntilVisible(find.byKey(const Key('campo-numero-cadastro')), 200, scrollable: lista());
+      await tester.enterText(find.byKey(const Key('campo-numero-cadastro')), '250');
+      await tester.enterText(find.byKey(const Key('campo-complemento-cadastro')), 'Casa 2');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('botao-salvar-perfil-membro')));
+      await tester.pumpAndSettle();
+
+      final salvo = area.perfilEnviado!;
+      expect(salvo.telefone, '(54) 98888-7777');
+      expect(salvo.endereco.numero, '250');
+      expect(salvo.endereco.complemento, 'Casa 2');
+      expect(salvo.endereco.cidade, 'Soledade');
+      expect(salvo.foto, isNull);
+      expect(find.text('Perfil atualizado.'), findsOneWidget);
+      // Salvo, o botão some de novo.
+      expect(find.byKey(const Key('botao-salvar-perfil-membro')), findsNothing);
+      // A carteirinha é buscada de novo, para mostrar os dados (e a foto) novos.
+      expect(area.buscas, 2);
+    });
+
+    testWidgets('celular inválido não salva', (tester) async {
+      final area = AreaMembroRepositorioMock();
+      await abrirPerfil(tester, area);
+
+      await tester.scrollUntilVisible(find.byKey(const Key('campo-celular-perfil')), 200, scrollable: lista());
+      await tester.enterText(find.byKey(const Key('campo-celular-perfil')), '5499');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('botao-salvar-perfil-membro')));
+      await tester.pumpAndSettle();
+
+      expect(area.perfilEnviado, isNull);
+      expect(find.text('Informe um celular válido, com DDD.'), findsOneWidget);
+    });
+  });
+
   testWidgets('sair pede confirmação', (tester) async {
     await entrarComoMembro(tester);
 

@@ -16,6 +16,7 @@ import '../../identidade/presentation/previa_carteirinha.dart';
 import '../domain/carteirinha_membro.dart';
 import 'aba_beneficios_membro.dart';
 import 'aba_locais_membro.dart';
+import 'aba_perfil_membro.dart';
 import 'tela_primeiro_acesso.dart';
 
 /// Área do membro (RF05 e RF09): carteirinha com QR Code, benefícios do plano
@@ -38,6 +39,9 @@ class _TelaAreaMembroState extends State<TelaAreaMembro> {
 
   /// O membro tocou em "Preencher depois": o formulário volta no próximo login.
   bool _adiouCadastro = false;
+
+  /// Muda quando o perfil é salvo, para a carteirinha recarregar com a foto nova.
+  int _versaoCarteirinha = 0;
 
   @override
   void initState() {
@@ -109,7 +113,11 @@ class _TelaAreaMembroState extends State<TelaAreaMembro> {
                 height: 34,
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(9)),
-                child: Image.memory(org!.logo!, fit: BoxFit.contain),
+                child: Image.memory(
+                  org!.logo!,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, _, _) => const Icon(Icons.shield_outlined, color: Cores.marca, size: 20),
+                ),
               ),
               const SizedBox(width: 10),
             ],
@@ -121,9 +129,16 @@ class _TelaAreaMembroState extends State<TelaAreaMembro> {
       body: IndexedStack(
         index: _aba,
         children: [
-          _AbaCarteirinha(organizacao: org),
+          _AbaCarteirinha(key: ValueKey(_versaoCarteirinha), organizacao: org),
           AbaBeneficiosMembro(organizacao: org, aoMostrarCarteirinha: () => setState(() => _aba = 0)),
           AbaLocaisMembro(organizacao: org, aoMostrarCarteirinha: () => setState(() => _aba = 0)),
+          AbaPerfilMembro(
+            aoSair: _sair,
+            aoSalvar: (c) => setState(() {
+              _cadastro = c;
+              _versaoCarteirinha++;
+            }),
+          ),
         ],
       ),
       bottomNavigationBar: NavigationBar(
@@ -141,6 +156,7 @@ class _TelaAreaMembroState extends State<TelaAreaMembro> {
             label: 'Benefícios',
           ),
           NavigationDestination(icon: Icon(Icons.place_outlined), selectedIcon: Icon(Icons.place), label: 'Locais'),
+          NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Perfil'),
         ],
       ),
     );
@@ -227,7 +243,7 @@ class _QrAmpliado extends StatelessWidget {
 }
 
 class _AbaCarteirinha extends StatefulWidget {
-  const _AbaCarteirinha({required this.organizacao});
+  const _AbaCarteirinha({super.key, required this.organizacao});
 
   final Organizacao? organizacao;
 

@@ -22,6 +22,10 @@ class AreaMembroRepositorioApi implements AreaMembroRepositorio {
       CadastroMembro.deJson(await _api.put('/membro/cadastro', dados.paraJson()) as Map<String, dynamic>);
 
   @override
+  Future<CadastroMembro> atualizarPerfil(DadosPerfilMembro dados) async =>
+      CadastroMembro.deJson(await _api.put('/membro/perfil', dados.paraJson()) as Map<String, dynamic>);
+
+  @override
   Future<CarteirinhaMembro> carteirinha() async =>
       CarteirinhaMembro.deJson(await _api.get('/membro/carteirinha') as Map<String, dynamic>);
 
@@ -59,6 +63,9 @@ class AreaMembroRepositorioMock implements AreaMembroRepositorio {
   /// O último cadastro enviado pelo formulário.
   DadosCadastroMembro? cadastroEnviado;
 
+  /// O último perfil salvo pela aba "Meu perfil".
+  DadosPerfilMembro? perfilEnviado;
+
   /// Situação simulada, para testar bloqueio e vencimento.
   StatusCarteirinha status;
   int diasParaVencer;
@@ -78,13 +85,22 @@ class AreaMembroRepositorioMock implements AreaMembroRepositorio {
     return CadastroMembro(
       nome: d?.nome ?? 'Marina Membro',
       email: 'membro@membropass.dev',
-      telefone: d?.telefone ?? '(54) 99999-0001',
-      dataNascimento: d?.dataNascimento,
-      endereco: d?.endereco,
+      telefone: perfilEnviado?.telefone ?? d?.telefone ?? '(54) 99999-0001',
+      dataNascimento: d?.dataNascimento ?? (cadastroPendente ? null : DateTime(1995, 4, 15)),
+      endereco: perfilEnviado?.endereco ?? d?.endereco ?? (cadastroPendente ? null : _enderecoExemplo),
       foto: foto,
       confirmadoEm: cadastroPendente ? null : DateTime(2026, 11, 1),
     );
   }
+
+  static const _enderecoExemplo = EnderecoMembro(
+    cep: '99300-000',
+    logradouro: 'Rua das Flores',
+    numero: '100',
+    bairro: 'Centro',
+    cidade: 'Soledade',
+    uf: 'RS',
+  );
 
   @override
   Future<CadastroMembro> completarCadastro(DadosCadastroMembro dados) async {
@@ -92,6 +108,14 @@ class AreaMembroRepositorioMock implements AreaMembroRepositorio {
     if (foto == null) throw ErroApi(400, 'Escolha uma foto para a carteirinha.');
     cadastroEnviado = dados;
     cadastroPendente = false;
+    return cadastro();
+  }
+
+  @override
+  Future<CadastroMembro> atualizarPerfil(DadosPerfilMembro dados) async {
+    if (semConexao) throw Exception('sem conexão');
+    if (dados.foto != null) foto = dados.foto;
+    perfilEnviado = dados;
     return cadastro();
   }
 

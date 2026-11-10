@@ -17,6 +17,10 @@ class AvatarPerfil extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textoIniciais = Text(
+      iniciais,
+      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: tamanho * 0.36, letterSpacing: 0.5),
+    );
     return Container(
       width: tamanho,
       height: tamanho,
@@ -32,16 +36,16 @@ class AvatarPerfil extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       alignment: Alignment.center,
       child: foto != null
-          ? Image.memory(foto!, fit: BoxFit.cover, width: tamanho, height: tamanho, gaplessPlayback: true)
-          : Text(
-              iniciais,
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: tamanho * 0.36,
-                letterSpacing: 0.5,
-              ),
-            ),
+          ? Image.memory(
+              foto!,
+              fit: BoxFit.cover,
+              width: tamanho,
+              height: tamanho,
+              gaplessPlayback: true,
+              // Arquivo corrompido: volta para as iniciais.
+              errorBuilder: (_, _, _) => textoIniciais,
+            )
+          : textoIniciais,
     );
   }
 }

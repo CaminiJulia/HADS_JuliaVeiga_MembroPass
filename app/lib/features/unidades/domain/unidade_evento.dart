@@ -52,6 +52,17 @@ class UnidadeEvento {
 
   bool get evento => tipo == TipoLocal.evento;
 
+  /// O mesmo local sem a imagem, para cair na capa padrão se a imagem falhar.
+  UnidadeEvento get semImagem => UnidadeEvento(
+    id: id,
+    nome: nome,
+    tipo: tipo,
+    planoIds: planoIds,
+    localizacao: localizacao,
+    dataInicio: dataInicio,
+    dataFim: dataFim,
+  );
+
   /// Evento cujo período já terminou.
   bool encerrado(DateTime hoje) => evento && dataFim != null && hoje.isAfter(dataFim!);
 

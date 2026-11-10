@@ -193,6 +193,23 @@ class DadosCadastroMembro {
   };
 }
 
+/// O que o membro pode mudar depois do primeiro acesso. [foto] `null` mantém a atual.
+class DadosPerfilMembro {
+  const DadosPerfilMembro({required this.telefone, required this.endereco, this.foto, this.fotoTipo});
+
+  final String telefone;
+  final EnderecoMembro endereco;
+  final Uint8List? foto;
+  final String? fotoTipo;
+
+  Map<String, dynamic> paraJson() => {
+    'telefone': telefone,
+    ...endereco.paraJson(),
+    if (foto != null) 'foto': base64Encode(foto!),
+    if (foto != null) 'fotoTipo': fotoTipo,
+  };
+}
+
 /// O que o membro logado vê: a própria carteirinha, benefícios e locais.
 abstract interface class AreaMembroRepositorio {
   /// Dados pessoais e se o primeiro acesso já foi concluído.
@@ -200,6 +217,9 @@ abstract interface class AreaMembroRepositorio {
 
   /// Grava os dados do primeiro acesso, com a declaração de veracidade.
   Future<CadastroMembro> completarCadastro(DadosCadastroMembro dados);
+
+  /// Atualiza celular, endereço e, se vier, a foto ("Meu perfil").
+  Future<CadastroMembro> atualizarPerfil(DadosPerfilMembro dados);
 
   Future<CarteirinhaMembro> carteirinha();
 

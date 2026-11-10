@@ -2,7 +2,10 @@ import { Body, Controller, Get, Put } from '@nestjs/common';
 import { Apenas, Usuario } from '../auth/autenticacao.guard';
 import type { UsuarioLogado } from '../auth/autenticacao.guard';
 import { AreaMembroService } from './area-membro.service';
-import { CompletarCadastroDto } from './dto/completar-cadastro.dto';
+import {
+  AtualizarPerfilMembroDto,
+  CompletarCadastroDto,
+} from './dto/completar-cadastro.dto';
 import { SalvarFotoDto } from './dto/salvar-foto.dto';
 
 // Área do membro no app: carteirinha com QR Code, benefícios e locais.
@@ -26,6 +29,14 @@ export class AreaMembroController {
       usuario.organizacaoId,
       dados,
     );
+  }
+
+  @Put('perfil')
+  atualizarPerfil(
+    @Usuario() usuario: UsuarioLogado,
+    @Body() dados: AtualizarPerfilMembroDto,
+  ) {
+    return this.area.atualizarPerfil(usuario.id, usuario.organizacaoId, dados);
   }
 
   @Get('carteirinha')

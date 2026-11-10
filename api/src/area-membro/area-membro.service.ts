@@ -5,7 +5,10 @@ import {
 } from '@nestjs/common';
 import { BancoService } from '../banco/banco.service';
 import { Datas } from '../comum/datas';
-import { CompletarCadastroDto } from './dto/completar-cadastro.dto';
+import {
+  AtualizarPerfilMembroDto,
+  CompletarCadastroDto,
+} from './dto/completar-cadastro.dto';
 import { SalvarFotoDto } from './dto/salvar-foto.dto';
 import { QrCarteirinha } from './qr-carteirinha';
 
@@ -226,6 +229,45 @@ export class AreaMembroService {
       throw new NotFoundException('Membro não encontrado.');
     if (!linhas[0].tem_foto)
       throw new BadRequestException('Escolha uma foto para a carteirinha.');
+    return this.cadastro(membroId, organizacaoId);
+  }
+
+  // Depois do primeiro acesso, o membro mantém em dia celular, endereço e foto.
+  // Nome e nascimento ficam como foram declarados: só a administração muda.
+  async atualizarPerfil(
+    membroId: string,
+    organizacaoId: string,
+    d: AtualizarPerfilMembroDto,
+  ) {
+    const foto = d.foto ? Buffer.from(d.foto, 'base64') : null;
+    if (foto && foto.length > TAMANHO_MAXIMO_FOTO) {
+      throw new BadRequestException('A foto pode ter no máximo 512 KB.');
+    }
+    const cep = d.cep.replace(/\D/g, '');
+    const linhas = await this.banco.consultar<{ id: string }>(
+      `UPDATE membro SET
+         telefone = $3, cep = $4, logradouro = $5, numero = $6, complemento = $7,
+         bairro = $8, cidade = $9, uf = $10,
+         foto = COALESCE($11, foto), foto_tipo = COALESCE($12, foto_tipo)
+       WHERE id = $1 AND organizacao_id = $2 AND status = 'ATIVO'
+       RETURNING id`,
+      [
+        membroId,
+        organizacaoId,
+        d.telefone,
+        `${cep.slice(0, 5)}-${cep.slice(5)}`,
+        d.logradouro,
+        d.numero,
+        d.complemento ?? null,
+        d.bairro,
+        d.cidade,
+        d.uf,
+        foto,
+        foto ? d.fotoTipo : null,
+      ],
+    );
+    if (linhas.length === 0)
+      throw new NotFoundException('Membro não encontrado.');
     return this.cadastro(membroId, organizacaoId);
   }
 

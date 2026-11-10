@@ -321,7 +321,12 @@ class _Logo extends StatelessWidget {
           ? null
           : c.logo == null
           ? Icon(Icons.shield_outlined, color: c.cor, size: tamanho * 0.6)
-          : Image.memory(c.logo!, fit: BoxFit.contain, semanticLabel: 'Logo da organização'),
+          : Image.memory(
+              c.logo!,
+              fit: BoxFit.contain,
+              semanticLabel: 'Logo da organização',
+              errorBuilder: (_, _, _) => Icon(Icons.shield_outlined, color: c.cor, size: tamanho * 0.6),
+            ),
     );
   }
 }
@@ -339,6 +344,7 @@ class _Foto extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final foto = c.esboco ? null : c.dados.foto;
+    final silhueta = Icon(Icons.person, size: min(largura, altura) * 0.55, color: Colors.white.withValues(alpha: 0.85));
     final moldura = Container(
       width: largura,
       height: altura,
@@ -350,10 +356,17 @@ class _Foto extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: foto != null
-          ? Image.memory(foto, fit: BoxFit.cover, gaplessPlayback: true, semanticLabel: 'Foto do membro')
+          ? Image.memory(
+              foto,
+              fit: BoxFit.cover,
+              gaplessPlayback: true,
+              semanticLabel: 'Foto do membro',
+              // Arquivo corrompido: mostra a silhueta em vez do erro.
+              errorBuilder: (_, _, _) => silhueta,
+            )
           : c.esboco
           ? null
-          : Icon(Icons.person, size: min(largura, altura) * 0.55, color: Colors.white.withValues(alpha: 0.85)),
+          : silhueta,
     );
 
     final aoTocar = c.aoTocarFoto;

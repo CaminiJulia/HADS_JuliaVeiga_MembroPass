@@ -22,7 +22,12 @@ class LogoParceiro extends StatelessWidget {
         height: tamanho,
         padding: EdgeInsets.all(tamanho * 0.1),
         decoration: BoxDecoration(color: Colors.white, borderRadius: raio),
-        child: Image.memory(logo!, fit: BoxFit.contain, semanticLabel: 'Logo do parceiro'),
+        child: Image.memory(
+          logo!,
+          fit: BoxFit.contain,
+          semanticLabel: 'Logo do parceiro',
+          errorBuilder: (_, _, _) => const Icon(Icons.storefront_outlined, color: Cores.marca),
+        ),
       );
     }
     return Container(

@@ -205,7 +205,12 @@ class _Capa extends StatelessWidget {
   Widget build(BuildContext context) {
     final imagem = local.imagem;
     if (imagem != null) {
-      return Image.memory(imagem, fit: BoxFit.cover, semanticLabel: 'Imagem de ${local.nome}');
+      return Image.memory(
+        imagem,
+        fit: BoxFit.cover,
+        semanticLabel: 'Imagem de ${local.nome}',
+        errorBuilder: (_, _, _) => _Capa(local: local.semImagem, paleta: paleta),
+      );
     }
     return DecoratedBox(
       decoration: BoxDecoration(

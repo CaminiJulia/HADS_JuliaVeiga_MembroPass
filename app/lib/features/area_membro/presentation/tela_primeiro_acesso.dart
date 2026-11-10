@@ -1,14 +1,13 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/formatacao/datas.dart';
 import '../../../core/tema/cores.dart';
 import '../../../core/widgets/componentes.dart';
-import '../../perfil/domain/perfil.dart';
-import '../../perfil/presentation/avatar_perfil.dart';
 import '../domain/carteirinha_membro.dart';
+import 'campos_membro.dart';
 
 /// Primeiro acesso do membro: antes de ver a carteirinha, ele confere o nome,
 /// preenche celular, nascimento e endereço, escolhe a foto e declara que as
@@ -33,13 +32,6 @@ class TelaPrimeiroAcesso extends StatefulWidget {
   /// "Preencher depois". Com `true`, a carteirinha só abre após o cadastro.
   static const obrigatorio = false;
 
-  static const tamanhoMaximoFoto = 512 * 1024;
-
-  static const ufs = [
-    'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', //
-    'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
-  ];
-
   @override
   State<TelaPrimeiroAcesso> createState() => _TelaPrimeiroAcessoState();
 }
@@ -51,13 +43,7 @@ class _TelaPrimeiroAcessoState extends State<TelaPrimeiroAcesso> {
   late final _nascimento = TextEditingController(
     text: widget.cadastro.dataNascimento == null ? '' : Datas.formatar(widget.cadastro.dataNascimento!),
   );
-  late final _cep = TextEditingController(text: widget.cadastro.endereco?.cep ?? '');
-  late final _logradouro = TextEditingController(text: widget.cadastro.endereco?.logradouro ?? '');
-  late final _numero = TextEditingController(text: widget.cadastro.endereco?.numero ?? '');
-  late final _complemento = TextEditingController(text: widget.cadastro.endereco?.complemento ?? '');
-  late final _bairro = TextEditingController(text: widget.cadastro.endereco?.bairro ?? '');
-  late final _cidade = TextEditingController(text: widget.cadastro.endereco?.cidade ?? '');
-  late String? _uf = widget.cadastro.endereco?.uf;
+  late final _endereco = ControlesEndereco(widget.cadastro.endereco);
 
   late Uint8List? _foto = widget.cadastro.foto;
   String? _fotoTipo;
@@ -67,67 +53,21 @@ class _TelaPrimeiroAcessoState extends State<TelaPrimeiroAcesso> {
   bool _tentouEnviar = false;
   bool _enviando = false;
 
-  List<TextEditingController> get _campos => [
-    _nome,
-    _telefone,
-    _nascimento,
-    _cep,
-    _logradouro,
-    _numero,
-    _complemento,
-    _bairro,
-    _cidade,
-  ];
-
   @override
   void dispose() {
-    for (final c in _campos) {
-      c.dispose();
-    }
+    _nome.dispose();
+    _telefone.dispose();
+    _nascimento.dispose();
+    _endereco.dispose();
     super.dispose();
   }
 
   Future<void> _escolherFoto() async {
-    final origem = await showModalBottomSheet<ImageSource>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_camera_outlined),
-              title: const Text('Tirar foto'),
-              onTap: () => Navigator.pop(context, ImageSource.camera),
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Escolher da galeria'),
-              onTap: () => Navigator.pop(context, ImageSource.gallery),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-    if (origem == null) return;
-    final arquivo = await ImagePicker().pickImage(
-      source: origem,
-      maxWidth: 600,
-      maxHeight: 600,
-      imageQuality: 85,
-      preferredCameraDevice: CameraDevice.front,
-    );
-    if (arquivo == null) return;
-    final bytes = await arquivo.readAsBytes();
-    if (!mounted) return;
-    if (bytes.length > TelaPrimeiroAcesso.tamanhoMaximoFoto) {
-      avisar(context, 'A foto pode ter no máximo 512 KB.');
-      return;
-    }
+    final escolhida = await escolherFotoMembro(context);
+    if (escolhida == null || !mounted) return;
     setState(() {
-      _foto = bytes;
-      _fotoTipo = arquivo.name.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+      _foto = escolhida.bytes;
+      _fotoTipo = escolhida.tipo;
       _fotoNova = true;
     });
   }
@@ -159,21 +99,12 @@ class _TelaPrimeiroAcessoState extends State<TelaPrimeiroAcesso> {
     FocusScope.of(context).unfocus();
     setState(() => _enviando = true);
     try {
-      String? opcional(TextEditingController c) => c.text.trim().isEmpty ? null : c.text.trim();
       final cadastro = await context.read<AreaMembroRepositorio>().completarCadastro(
         DadosCadastroMembro(
           nome: _nome.text.trim(),
           telefone: _telefone.text.trim(),
           dataNascimento: _lerNascimento(_nascimento.text)!,
-          endereco: EnderecoMembro(
-            cep: _cep.text.trim(),
-            logradouro: _logradouro.text.trim(),
-            numero: _numero.text.trim(),
-            complemento: opcional(_complemento),
-            bairro: _bairro.text.trim(),
-            cidade: _cidade.text.trim(),
-            uf: _uf!,
-          ),
+          endereco: _endereco.paraEndereco(),
           foto: _fotoNova ? _foto : null,
           fotoTipo: _fotoNova ? _fotoTipo : null,
         ),
@@ -238,12 +169,6 @@ class _TelaPrimeiroAcessoState extends State<TelaPrimeiroAcesso> {
   List<Widget> _conteudo(BuildContext context) {
     final texto = Theme.of(context).textTheme;
     final primeiroNome = widget.cadastro.nome.trim().split(RegExp(r'\s+')).first;
-    final iniciais = Perfil(
-      id: '',
-      nome: _nome.text.trim().isEmpty ? '?' : _nome.text,
-      email: '',
-      organizacaoNome: '',
-    ).iniciais;
     final semFoto = _tentouEnviar && _foto == null;
 
     return [
@@ -256,43 +181,14 @@ class _TelaPrimeiroAcessoState extends State<TelaPrimeiroAcesso> {
       const SizedBox(height: 16),
       const _AvisoVeracidade(),
 
-      const _TituloSecao('Foto da carteirinha'),
+      const TituloSecaoMembro('Foto da carteirinha'),
       Center(
-        child: Semantics(
-          button: true,
-          label: _foto == null ? 'Adicionar foto' : 'Trocar foto',
-          excludeSemantics: true,
-          child: InkWell(
-            key: const Key('foto-primeiro-acesso'),
-            onTap: _enviando ? null : _escolherFoto,
-            customBorder: const CircleBorder(),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: semFoto ? Cores.erro : Cores.primaria.withValues(alpha: 0.5), width: 2),
-                  ),
-                  child: AvatarPerfil(iniciais: iniciais, foto: _foto, tamanho: 112),
-                ),
-                Positioned(
-                  right: 0,
-                  bottom: 2,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Cores.primaria,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Cores.fundo, width: 3),
-                    ),
-                    child: const Icon(Icons.photo_camera, size: 18, color: Cores.noPrimaria),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        child: FotoMembroEditavel(
+          key: const Key('foto-primeiro-acesso'),
+          nome: _nome.text,
+          foto: _foto,
+          erro: semFoto,
+          aoTocar: _enviando ? null : _escolherFoto,
         ),
       ),
       const SizedBox(height: 10),
@@ -304,7 +200,7 @@ class _TelaPrimeiroAcessoState extends State<TelaPrimeiroAcesso> {
         style: texto.bodySmall?.copyWith(color: semFoto ? Cores.erro : Cores.textoSecundario),
       ),
 
-      const _TituloSecao('Dados pessoais'),
+      const TituloSecaoMembro('Dados pessoais'),
       TextFormField(
         key: const Key('campo-nome-cadastro'),
         controller: _nome,
@@ -332,23 +228,7 @@ class _TelaPrimeiroAcessoState extends State<TelaPrimeiroAcesso> {
         ),
       ),
       const SizedBox(height: 14),
-      TextFormField(
-        key: const Key('campo-celular-cadastro'),
-        controller: _telefone,
-        enabled: !_enviando,
-        keyboardType: TextInputType.phone,
-        textInputAction: TextInputAction.next,
-        inputFormatters: [_Mascara.celular],
-        decoration: const InputDecoration(
-          labelText: 'Celular com DDD',
-          hintText: '(54) 99999-0000',
-          prefixIcon: Icon(Icons.smartphone_outlined),
-        ),
-        validator: (v) {
-          final digitos = (v ?? '').replaceAll(RegExp(r'\D'), '').length;
-          return digitos == 10 || digitos == 11 ? null : 'Informe um celular válido, com DDD.';
-        },
-      ),
+      CampoCelular(chave: const Key('campo-celular-cadastro'), controle: _telefone, habilitado: !_enviando),
       const SizedBox(height: 14),
       TextFormField(
         key: const Key('campo-nascimento-cadastro'),
@@ -356,7 +236,7 @@ class _TelaPrimeiroAcessoState extends State<TelaPrimeiroAcesso> {
         enabled: !_enviando,
         keyboardType: TextInputType.number,
         textInputAction: TextInputAction.next,
-        inputFormatters: [_Mascara.data],
+        inputFormatters: [Mascara.data],
         decoration: const InputDecoration(
           labelText: 'Data de nascimento',
           hintText: 'DD/MM/AAAA',
@@ -365,79 +245,11 @@ class _TelaPrimeiroAcessoState extends State<TelaPrimeiroAcesso> {
         validator: (v) => _lerNascimento(v ?? '') == null ? 'Informe uma data válida (DD/MM/AAAA).' : null,
       ),
 
-      const _TituloSecao('Endereço'),
-      TextFormField(
-        key: const Key('campo-cep-cadastro'),
-        controller: _cep,
-        enabled: !_enviando,
-        keyboardType: TextInputType.number,
-        textInputAction: TextInputAction.next,
-        inputFormatters: [_Mascara.cep],
-        decoration: const InputDecoration(
-          labelText: 'CEP',
-          hintText: '99999-999',
-          prefixIcon: Icon(Icons.markunread_mailbox_outlined),
-        ),
-        validator: (v) => RegExp(r'^\d{5}-\d{3}$').hasMatch((v ?? '').trim()) ? null : 'Informe um CEP válido.',
-      ),
-      const SizedBox(height: 14),
-      _campoTexto(
-        const Key('campo-rua-cadastro'),
-        _logradouro,
-        'Rua ou avenida',
-        150,
-        'Informe a rua.',
-        icone: Icons.signpost_outlined,
-      ),
-      const SizedBox(height: 14),
-      Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 110,
-            child: _campoTexto(
-              const Key('campo-numero-cadastro'),
-              _numero,
-              'Número',
-              10,
-              'Informe o número.',
-              teclado: TextInputType.streetAddress,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _campoTexto(
-              const Key('campo-complemento-cadastro'),
-              _complemento,
-              'Complemento (opcional)',
-              80,
-              null,
-            ),
-          ),
-        ],
-      ),
-      const SizedBox(height: 14),
-      _campoTexto(const Key('campo-bairro-cadastro'), _bairro, 'Bairro', 80, 'Informe o bairro.'),
-      const SizedBox(height: 14),
-      Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(child: _campoTexto(const Key('campo-cidade-cadastro'), _cidade, 'Cidade', 80, 'Informe a cidade.')),
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 104,
-            child: DropdownButtonFormField<String>(
-              key: const Key('campo-uf-cadastro'),
-              initialValue: _uf,
-              isExpanded: true,
-              menuMaxHeight: 320,
-              decoration: const InputDecoration(labelText: 'UF'),
-              items: [for (final uf in TelaPrimeiroAcesso.ufs) DropdownMenuItem(value: uf, child: Text(uf))],
-              onChanged: _enviando ? null : (uf) => setState(() => _uf = uf),
-              validator: (v) => v == null ? 'Escolha' : null,
-            ),
-          ),
-        ],
+      const TituloSecaoMembro('Endereço'),
+      CamposEndereco(
+        controles: _endereco,
+        habilitado: !_enviando,
+        aoMudarUf: (uf) => setState(() => _endereco.uf = uf),
       ),
 
       const SizedBox(height: 24),
@@ -460,28 +272,6 @@ class _TelaPrimeiroAcessoState extends State<TelaPrimeiroAcesso> {
         ),
       ),
     ];
-  }
-
-  Widget _campoTexto(
-    Key chave,
-    TextEditingController controle,
-    String rotulo,
-    int maximo,
-    String? erroVazio, {
-    IconData? icone,
-    TextInputType? teclado,
-  }) {
-    return TextFormField(
-      key: chave,
-      controller: controle,
-      enabled: !_enviando,
-      keyboardType: teclado,
-      textCapitalization: TextCapitalization.words,
-      textInputAction: TextInputAction.next,
-      maxLength: maximo,
-      decoration: InputDecoration(labelText: rotulo, prefixIcon: icone == null ? null : Icon(icone), counterText: ''),
-      validator: erroVazio == null ? null : (v) => (v ?? '').trim().isEmpty ? erroVazio : null,
-    );
   }
 }
 
@@ -524,64 +314,6 @@ class _AvisoVeracidade extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// Título de seção em caixa alta.
-class _TituloSecao extends StatelessWidget {
-  const _TituloSecao(this.texto);
-
-  final String texto;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 28, 4, 10),
-      child: Text(
-        texto.toUpperCase(),
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: Cores.textoSecundario,
-          letterSpacing: 1.1,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-/// Máscaras simples: aceitam só dígitos e encaixam a pontuação enquanto o membro digita.
-class _Mascara extends TextInputFormatter {
-  const _Mascara(this.formatar, this.maximoDigitos);
-
-  final String Function(String digitos) formatar;
-  final int maximoDigitos;
-
-  /// (54) 99999-0000 ou (54) 3333-0000
-  static final celular = _Mascara((d) {
-    if (d.isEmpty) return '';
-    if (d.length <= 2) return '($d';
-    final meio = d.length == 11 ? 7 : 6;
-    if (d.length <= meio) return '(${d.substring(0, 2)}) ${d.substring(2)}';
-    return '(${d.substring(0, 2)}) ${d.substring(2, meio)}-${d.substring(meio)}';
-  }, 11);
-
-  static final cep = _Mascara((d) => d.length <= 5 ? d : '${d.substring(0, 5)}-${d.substring(5)}', 8);
-
-  static final data = _Mascara((d) {
-    if (d.length <= 2) return d;
-    if (d.length <= 4) return '${d.substring(0, 2)}/${d.substring(2)}';
-    return '${d.substring(0, 2)}/${d.substring(2, 4)}/${d.substring(4)}';
-  }, 8);
-
-  @override
-  TextEditingValue formatEditUpdate(TextEditingValue antes, TextEditingValue depois) {
-    var digitos = depois.text.replaceAll(RegExp(r'\D'), '');
-    if (digitos.length > maximoDigitos) digitos = digitos.substring(0, maximoDigitos);
-    final texto = formatar(digitos);
-    return TextEditingValue(
-      text: texto,
-      selection: TextSelection.collapsed(offset: texto.length),
     );
   }
 }
