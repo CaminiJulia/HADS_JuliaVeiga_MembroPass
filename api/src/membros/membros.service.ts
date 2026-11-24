@@ -1,4 +1,3 @@
-import { randomInt } from 'node:crypto';
 import {
   BadRequestException,
   Injectable,
@@ -10,6 +9,8 @@ import type { UsuarioLogado } from '../auth/autenticacao.guard';
 import { listarAuditoria, registrarAuditoria } from '../auditoria/auditoria';
 import { BancoService, Consulta } from '../banco/banco.service';
 import { comUnico } from '../banco/erros';
+import { gerarSenha } from '../comum/senha';
+import { EmailService } from '../email/email.service';
 import { SalvarMembroDto } from './dto/membro.dto';
 
 export interface Membro {
@@ -58,14 +59,13 @@ const SQL_MEMBROS = `
 
 const EMAIL_EM_USO = 'Este e-mail já está em uso por outra conta.';
 
-// Sem caracteres que se confundem (0/O, 1/l/I), para ditar ao membro.
-const ALFABETO_SENHA =
-  'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
-
 // RF06 e RF05. Sempre filtrado pela organização do token (multi-tenant).
 @Injectable()
 export class MembrosService {
-  constructor(private readonly banco: BancoService) {}
+  constructor(
+    private readonly banco: BancoService,
+    private readonly email: EmailService,
+  ) {}
 
   async listar(organizacaoId: string, busca?: string): Promise<Membro[]> {
     const termo = busca?.trim();
@@ -88,7 +88,8 @@ export class MembrosService {
   }
 
   // Cria o membro com uma senha provisória, devolvida só nesta resposta para
-  // o administrador repassar. A carteirinha é emitida por trigger no banco.
+  // o administrador repassar e enviada por e-mail. No primeiro login, o app
+  // pede uma senha nova. A carteirinha é emitida por trigger no banco.
   async criar(organizacaoId: string, dados: SalvarMembroDto) {
     await exigirPlanoAtivo(this.banco.consultar, organizacaoId, dados.planoId);
     const senhaProvisoria = gerarSenha();
@@ -96,8 +97,8 @@ export class MembrosService {
 
     const [{ id }] = await comUnico(EMAIL_EM_USO, () =>
       this.banco.consultar<{ id: string }>(
-        `INSERT INTO membro (organizacao_id, nome, email, senha_hash, telefone, plano_id)
-         VALUES ($1, $2, $3, $4, $5, $6)
+        `INSERT INTO membro (organizacao_id, nome, email, senha_hash, telefone, plano_id, senha_provisoria)
+         VALUES ($1, $2, $3, $4, $5, $6, true)
          RETURNING id`,
         [
           organizacaoId,
@@ -109,7 +110,19 @@ export class MembrosService {
         ],
       ),
     );
-    return { membro: await this.buscar(organizacaoId, id), senhaProvisoria };
+    const membro = await this.buscar(organizacaoId, id);
+    const [org] = await this.banco.consultar<{ nome: string }>(
+      'SELECT nome FROM organizacao WHERE id = $1',
+      [organizacaoId],
+    );
+    const emailEnviado = await this.email.enviarSenhaProvisoria({
+      para: membro.email,
+      nome: membro.nome,
+      organizacao: org.nome,
+      senha: senhaProvisoria,
+      papel: 'membro',
+    });
+    return { membro, senhaProvisoria, emailEnviado };
   }
 
   // Trocar de plano não muda o vencimento atual; o novo plano vale a partir
@@ -278,13 +291,6 @@ async function exigirPlanoAtivo(
       'Este plano está desativado e não aceita novos membros.',
     );
   }
-}
-
-function gerarSenha(tamanho = 8) {
-  return Array.from(
-    { length: tamanho },
-    () => ALFABETO_SENHA[randomInt(ALFABETO_SENHA.length)],
-  ).join('');
 }
 
 function paraMembro(linha: LinhaMembro): Membro {

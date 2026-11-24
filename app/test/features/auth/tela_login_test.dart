@@ -63,17 +63,93 @@ void main() {
     });
   }
 
-  testWidgets('abre a recuperação de senha com o e-mail já preenchido', (tester) async {
+  testWidgets('recupera a senha com o código do e-mail e entra com a nova', (tester) async {
     await abrirApp(tester);
-    await tester.enterText(find.byKey(const Key('campo-email')), 'ana@org.com');
+    await tester.enterText(find.byKey(const Key('campo-email')), 'admin@membropass.dev');
     await tester.tap(find.text('Esqueci minha senha'));
     await tester.pumpAndSettle();
 
     expect(find.text('Recuperar senha'), findsOneWidget);
-    expect(find.widgetWithText(TextFormField, 'ana@org.com'), findsOneWidget);
-
-    await tester.tap(find.text('Enviar link'));
+    expect(find.widgetWithText(TextFormField, 'admin@membropass.dev'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('botao-enviar-codigo')));
     await tester.pumpAndSettle();
-    expect(find.text('Verifique seu e-mail'), findsOneWidget);
+    expect(find.text('Digite o código'), findsOneWidget);
+
+    // Código errado: a mensagem da API aparece e continua na mesma etapa.
+    await tester.enterText(find.byKey(const Key('campo-codigo')), '000000');
+    await tester.enterText(find.byKey(const Key('campo-nova-senha')), 'NovaSenha1');
+    await tester.enterText(find.byKey(const Key('campo-confirmar-senha')), 'NovaSenha1');
+    await tester.ensureVisible(find.byKey(const Key('botao-redefinir-senha')));
+    await tester.tap(find.byKey(const Key('botao-redefinir-senha')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Código incorreto'), findsOneWidget);
+
+    await tester.enterText(find.byKey(const Key('campo-codigo')), AuthRepositorioMock.codigo);
+    await tester.ensureVisible(find.byKey(const Key('botao-redefinir-senha')));
+    await tester.tap(find.byKey(const Key('botao-redefinir-senha')));
+    await tester.pumpAndSettle();
+    expect(find.text('Senha alterada'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('botao-voltar-login')));
+    await tester.pumpAndSettle();
+    await entrar(tester, 'admin@membropass.dev', 'NovaSenha1');
+    expect(find.text('Clube Exemplo'), findsOneWidget);
+  });
+
+  testWidgets('a senha nova da recuperação segue as regras', (tester) async {
+    await abrirApp(tester);
+    await tester.tap(find.text('Esqueci minha senha'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('campo-email-recuperar')), 'admin@membropass.dev');
+    await tester.tap(find.byKey(const Key('botao-enviar-codigo')));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byKey(const Key('campo-codigo')), '12');
+    await tester.enterText(find.byKey(const Key('campo-nova-senha')), 'curta');
+    await tester.enterText(find.byKey(const Key('campo-confirmar-senha')), 'outra');
+    await tester.ensureVisible(find.byKey(const Key('botao-redefinir-senha')));
+    await tester.tap(find.byKey(const Key('botao-redefinir-senha')));
+    await tester.pumpAndSettle();
+    expect(find.text('O código tem 6 números.'), findsOneWidget);
+    expect(find.text('Use pelo menos 8 caracteres.'), findsOneWidget);
+    expect(find.text('As senhas não conferem.'), findsOneWidget);
+  });
+
+  testWidgets('com senha provisória, pede uma senha nova antes de entrar', (tester) async {
+    await abrirApp(tester);
+    await entrar(tester, AuthRepositorioMock.novoOperador.email, AuthRepositorioMock.senhaProvisoria);
+
+    expect(find.text('Crie sua senha, Paula'), findsOneWidget);
+    expect(find.text('Validar check-in'), findsNothing);
+
+    await tester.enterText(find.byKey(const Key('campo-nova-senha')), 'MinhaSenha8');
+    await tester.enterText(find.byKey(const Key('campo-confirmar-senha')), 'MinhaSenha8');
+    await tester.ensureVisible(find.byKey(const Key('botao-criar-senha')));
+    await tester.tap(find.byKey(const Key('botao-criar-senha')));
+    await tester.pumpAndSettle();
+    expect(find.text('Validar check-in'), findsOneWidget);
+  });
+
+  testWidgets('a senha provisória deixa de valer depois da troca', (tester) async {
+    await abrirApp(tester);
+    await entrar(tester, AuthRepositorioMock.novoOperador.email, AuthRepositorioMock.senhaProvisoria);
+    await tester.enterText(find.byKey(const Key('campo-nova-senha')), 'MinhaSenha8');
+    await tester.enterText(find.byKey(const Key('campo-confirmar-senha')), 'MinhaSenha8');
+    await tester.ensureVisible(find.byKey(const Key('botao-criar-senha')));
+    await tester.tap(find.byKey(const Key('botao-criar-senha')));
+    await tester.pumpAndSettle();
+
+    // Sai e tenta a provisória de novo: não entra. Com a nova, vai direto.
+    await tester.tap(find.byTooltip('Sair'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sair').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('botao-entrar-com-email')));
+    await tester.pumpAndSettle();
+    await entrar(tester, AuthRepositorioMock.novoOperador.email, AuthRepositorioMock.senhaProvisoria);
+    expect(find.textContaining('incorretos'), findsOneWidget);
+    await entrar(tester, AuthRepositorioMock.novoOperador.email, 'MinhaSenha8');
+    expect(find.text('Validar check-in'), findsOneWidget);
+    expect(find.text('Crie sua senha, Paula'), findsNothing);
   });
 }

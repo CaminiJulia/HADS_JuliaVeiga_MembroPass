@@ -19,6 +19,16 @@ class ClienteApi {
   /// Token JWT do usuário logado; `null` depois de sair.
   String? token;
 
+  /// A API gratuita online "dorme" sem uso e leva perto de 1 minuto para
+  /// acordar: o primeiro pedido precisa esperar mais que o normal.
+  static const tempoLimite = Duration(seconds: 70);
+
+  /// Chamado ao abrir o app: começa a acordar a API enquanto a pessoa ainda
+  /// digita o login. Erros são ignorados (é só um aviso).
+  void acordar() {
+    _cliente.get(Uri.parse('$_urlBase/saude')).timeout(tempoLimite).then((_) {}, onError: (_) {});
+  }
+
   Future<dynamic> get(String caminho) => _enviar('GET', caminho);
   Future<dynamic> post(String caminho, Object corpo) => _enviar('POST', caminho, corpo);
   Future<dynamic> put(String caminho, Object corpo) => _enviar('PUT', caminho, corpo);
@@ -33,9 +43,7 @@ class ClienteApi {
     if (token != null) requisicao.headers['Authorization'] = 'Bearer $token';
     if (corpo != null) requisicao.body = jsonEncode(corpo);
 
-    final resposta = await http.Response.fromStream(
-      await _cliente.send(requisicao).timeout(const Duration(seconds: 15)),
-    );
+    final resposta = await http.Response.fromStream(await _cliente.send(requisicao).timeout(tempoLimite));
     final json = resposta.body.isEmpty ? null : jsonDecode(resposta.body);
 
     if (resposta.statusCode >= 400) {

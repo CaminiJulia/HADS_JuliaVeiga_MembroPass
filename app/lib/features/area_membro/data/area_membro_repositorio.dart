@@ -134,7 +134,9 @@ class AreaMembroRepositorioMock implements AreaMembroRepositorio {
       status: status,
       dataEmissao: hoje.subtract(const Duration(days: 10)),
       dataVencimento: hoje.add(Duration(days: diasParaVencer)),
-      qrCodigo: ativa ? 'qr-de-teste' : null,
+      qr: ativa
+          ? ChaveQr(carteirinhaId: '38f29dba-0000-4000-8000-000000000001', versao: 1, chave: Uint8List(32))
+          : null,
     );
   }
 

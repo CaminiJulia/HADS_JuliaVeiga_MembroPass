@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../api/cliente_api.dart';
 import '../formatacao/datas.dart';
@@ -192,4 +193,83 @@ class CaixaInfo extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Senha provisória recém-gerada para uma conta, com opção de copiar.
+/// Ela só aparece aqui: a API não guarda a senha, só o hash.
+Future<void> mostrarSenhaProvisoria(
+  BuildContext context, {
+  required String titulo,
+  required String mensagem,
+  required String email,
+  required String senha,
+  bool emailEnviado = false,
+}) {
+  return showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => AlertDialog(
+      icon: const Icon(Icons.verified_user_outlined, color: Cores.sucesso),
+      title: Text(titulo),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(mensagem),
+          const SizedBox(height: 16),
+          SelectableText(email, textAlign: TextAlign.center),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(color: Cores.fundo, borderRadius: BorderRadius.circular(12)),
+            child: SelectableText(
+              senha,
+              key: const Key('senha-provisoria'),
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700, letterSpacing: 2),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            key: Key(emailEnviado ? 'senha-enviada-por-email' : 'senha-nao-enviada'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                emailEnviado ? Icons.mark_email_read_outlined : Icons.unsubscribe_outlined,
+                size: 18,
+                color: emailEnviado ? Cores.sucesso : Cores.alerta,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  emailEnviado
+                      ? 'Também enviamos estes dados para o e-mail. No primeiro acesso, o app pede uma senha nova.'
+                      : 'Não foi possível enviar por e-mail: repasse a senha você mesmo. '
+                            'No primeiro acesso, o app pede uma senha nova.',
+                  style: const TextStyle(fontSize: 12, color: Cores.textoSecundario),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Esta senha não será mostrada de novo.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Cores.textoSecundario, fontSize: 12),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton.icon(
+          onPressed: () {
+            Clipboard.setData(ClipboardData(text: senha));
+            avisar(context, 'Senha copiada.');
+          },
+          icon: const Icon(Icons.copy, size: 18),
+          label: const Text('Copiar senha'),
+        ),
+        FilledButton(onPressed: () => Navigator.pop(context), child: const Text('Pronto')),
+      ],
+    ),
+  );
 }

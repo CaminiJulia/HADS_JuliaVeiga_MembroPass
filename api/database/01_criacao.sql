@@ -7,9 +7,18 @@ CREATE TYPE status_membro AS ENUM ('ATIVO', 'DESATIVADO', 'CANCELADO');
 CREATE TYPE tipo_desconto AS ENUM ('PERCENTUAL', 'VALOR');
 CREATE TYPE status_carteirinha AS ENUM ('ATIVA', 'BLOQUEADA', 'INVALIDADA');
 CREATE TYPE tipo_unidade_evento AS ENUM ('UNIDADE', 'EVENTO');
+CREATE TYPE motivo_recusa_checkin AS ENUM (
+    'QR_INVALIDO', 'QR_DESATUALIZADO', 'MEMBRO_INATIVO',
+    'CARTEIRINHA_BLOQUEADA', 'CARTEIRINHA_INVALIDADA', 'PLANO_NAO_ACEITO',
+    'NUMERO_INVALIDO', 'QR_EXPIRADO'
+);
+-- Como o operador identificou a carteirinha: QR Code ou número digitado.
+CREATE TYPE forma_checkin AS ENUM ('QR', 'NUMERO');
 CREATE TYPE acao_auditoria AS ENUM (
     'LIBERACAO_CICLO', 'BLOQUEIO_MANUAL', 'DESBLOQUEIO',
-    'DESATIVACAO_MEMBRO', 'REATIVACAO_MEMBRO', 'EDICAO_PLANO'
+    'DESATIVACAO_MEMBRO', 'REATIVACAO_MEMBRO', 'EDICAO_PLANO',
+    'CADASTRO_OPERADOR', 'EDICAO_OPERADOR', 'DESATIVACAO_OPERADOR',
+    'REATIVACAO_OPERADOR', 'NOVA_SENHA_OPERADOR'
 );
 
 -- RF03 e RF17: a organização e a identidade visual aplicada a todas as carteirinhas.
@@ -37,6 +46,10 @@ CREATE TABLE administrador (
     email           VARCHAR(255) NOT NULL,
     senha_hash      VARCHAR(255) NOT NULL,
     status          status_cadastro NOT NULL DEFAULT 'ATIVO',
+    -- Senha gerada pelo administrador: o app pede uma nova no primeiro login.
+    senha_provisoria BOOLEAN NOT NULL DEFAULT false,
+    -- Vai no token; trocar ou redefinir a senha soma 1 e derruba as sessões abertas.
+    versao_sessao   INTEGER NOT NULL DEFAULT 1,
     -- Perfil: dados de contato e foto, editados pelo próprio administrador.
     telefone        VARCHAR(20),
     cargo           VARCHAR(80),
@@ -51,7 +64,16 @@ CREATE TABLE operador (
     nome            VARCHAR(150) NOT NULL,
     email           VARCHAR(255) NOT NULL,
     senha_hash      VARCHAR(255) NOT NULL,
-    status          status_cadastro NOT NULL DEFAULT 'ATIVO'
+    status          status_cadastro NOT NULL DEFAULT 'ATIVO',
+    -- Senha gerada pelo administrador: o app pede uma nova no primeiro login.
+    senha_provisoria BOOLEAN NOT NULL DEFAULT false,
+    -- Vai no token; trocar ou redefinir a senha soma 1 e derruba as sessões abertas.
+    versao_sessao   INTEGER NOT NULL DEFAULT 1,
+    -- Perfil: dados de contato e foto, editados pelo próprio operador.
+    telefone        VARCHAR(20),
+    foto            BYTEA CHECK (octet_length(foto) <= 524288),
+    foto_tipo       VARCHAR(20) CHECK (foto_tipo IN ('image/png', 'image/jpeg')),
+    CHECK ((foto IS NULL) = (foto_tipo IS NULL))
 );
 
 -- RF04: planos de associação. Desativar um plano não afeta os membros já vinculados.
@@ -80,6 +102,10 @@ CREATE TABLE membro (
     plano_id        UUID NOT NULL REFERENCES plano_associacao (id),
     data_adesao     DATE NOT NULL DEFAULT CURRENT_DATE,
     status          status_membro NOT NULL DEFAULT 'ATIVO',
+    -- Senha gerada pelo administrador: o app pede uma nova no primeiro login.
+    senha_provisoria BOOLEAN NOT NULL DEFAULT false,
+    -- Vai no token; trocar ou redefinir a senha soma 1 e derruba as sessões abertas.
+    versao_sessao   INTEGER NOT NULL DEFAULT 1,
     -- Foto da carteirinha, enviada pelo próprio membro no app.
     foto            BYTEA CHECK (octet_length(foto) <= 524288),
     foto_tipo       VARCHAR(20) CHECK (foto_tipo IN ('image/png', 'image/jpeg')),
@@ -191,6 +217,43 @@ CREATE TABLE unidade_evento_plano (
     plano_id           UUID NOT NULL REFERENCES plano_associacao (id) ON DELETE CASCADE,
     PRIMARY KEY (unidade_evento_id, plano_id)
 );
+
+-- RF10: cada leitura de QR Code feita por um operador, aprovada ou recusada.
+-- O nome do local é guardado junto: excluir o local não apaga o histórico.
+CREATE TABLE checkin (
+    id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organizacao_id     UUID NOT NULL REFERENCES organizacao (id),
+    operador_id        UUID NOT NULL REFERENCES operador (id),
+    unidade_evento_id  UUID REFERENCES unidade_evento (id) ON DELETE SET NULL,
+    local_nome         VARCHAR(150) NOT NULL,
+    -- NULL quando o QR Code ou o número não é de nenhuma carteirinha da organização.
+    membro_id          UUID REFERENCES membro (id),
+    forma              forma_checkin NOT NULL DEFAULT 'QR',
+    aprovado           BOOLEAN NOT NULL,
+    motivo_recusa      motivo_recusa_checkin,
+    -- Vencida, mas ativa: entra, com alerta ao operador (só o admin bloqueia).
+    vencida            BOOLEAN NOT NULL DEFAULT false,
+    data_hora          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CHECK (aprovado = (motivo_recusa IS NULL)),
+    CHECK (membro_id IS NOT NULL OR motivo_recusa IN ('QR_INVALIDO', 'NUMERO_INVALIDO'))
+);
+
+CREATE INDEX checkin_local_data_idx ON checkin (unidade_evento_id, data_hora DESC);
+CREATE INDEX checkin_membro_idx ON checkin (membro_id);
+
+-- HU03: código de 6 dígitos enviado por e-mail para redefinir a senha.
+-- Só o hash é guardado; vale 15 minutos, uma vez, com até 5 tentativas.
+CREATE TABLE recuperacao_senha (
+    id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email        VARCHAR(255) NOT NULL,
+    codigo_hash  VARCHAR(255) NOT NULL,
+    expira_em    TIMESTAMPTZ NOT NULL,
+    tentativas   INTEGER NOT NULL DEFAULT 0,
+    usado_em     TIMESTAMPTZ,
+    criado_em    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX recuperacao_senha_email_idx ON recuperacao_senha (lower(email), criado_em DESC);
 
 -- E-mail único dentro de cada cadastro, sem diferenciar maiúsculas.
 CREATE UNIQUE INDEX administrador_email_un ON administrador (lower(email));

@@ -7,7 +7,6 @@ import {
   IsString,
   Matches,
   MaxLength,
-  MinLength,
   ValidateIf,
 } from 'class-validator';
 
@@ -47,21 +46,4 @@ export class SalvarPerfilDto {
     message: 'A foto deve ser PNG ou JPEG.',
   })
   fotoTipo?: string;
-}
-
-export class TrocarSenhaDto {
-  @IsString()
-  @IsNotEmpty({ message: 'Informe sua senha atual.' })
-  senhaAtual!: string;
-
-  // Mínimo de 8 caracteres, com pelo menos uma letra e um número.
-  @IsString()
-  @MinLength(8, {
-    message: 'A nova senha precisa ter pelo menos 8 caracteres.',
-  })
-  @MaxLength(72, { message: 'A nova senha pode ter no máximo 72 caracteres.' })
-  @Matches(/(?=.*[A-Za-z])(?=.*\d)/, {
-    message: 'A nova senha precisa ter letras e números.',
-  })
-  novaSenha!: string;
 }

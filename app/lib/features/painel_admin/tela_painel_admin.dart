@@ -28,6 +28,7 @@ class TelaPainelAdmin extends StatefulWidget {
 
   static const _organizacao = [
     _Secao('Unidades e eventos', 'Onde a carteirinha é aceita', Icons.place_outlined, Rotas.unidades),
+    _Secao('Operadores', 'Quem valida o check-in', Icons.badge_outlined, Rotas.operadores),
     _Secao('Identidade visual', 'Logo e cor da carteirinha', Icons.palette_outlined, Rotas.identidade),
     _Secao('Histórico de ações', 'Auditoria da organização', Icons.history, Rotas.auditoria),
   ];

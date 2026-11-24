@@ -6,7 +6,7 @@ import { QrCarteirinha } from './qr-carteirinha';
 @Module({
   controllers: [AreaMembroController],
   providers: [AreaMembroService, QrCarteirinha],
-  // O check-in do operador (RF10) vai validar o QR com o mesmo serviço.
+  // O check-in do operador (RF10) valida o QR com o mesmo serviço.
   exports: [QrCarteirinha],
 })
 export class AreaMembroModule {}

@@ -22,6 +22,7 @@ class AuthRepositorioApi implements AuthRepositorio {
         papel: Papel.values.byName(usuario['papel'] as String),
         organizacaoId: usuario['organizacaoId'] as String,
         organizacaoNome: usuario['organizacaoNome'] as String,
+        senhaProvisoria: usuario['senhaProvisoria'] as bool? ?? false,
       );
     } on ErroApi catch (e) {
       throw switch (e.status) {
@@ -35,6 +36,19 @@ class AuthRepositorioApi implements AuthRepositorio {
   @override
   Future<void> solicitarRecuperacaoSenha(String email) async {
     await _api.post('/auth/recuperar-senha', {'email': email.trim()});
+  }
+
+  @override
+  Future<void> redefinirSenha({required String email, required String codigo, required String novaSenha}) async {
+    await _api.post('/auth/redefinir-senha', {'email': email.trim(), 'codigo': codigo, 'novaSenha': novaSenha});
+  }
+
+  @override
+  Future<void> trocarSenha({required String senhaAtual, required String novaSenha}) async {
+    final corpo =
+        await _api.put('/auth/senha', {'senhaAtual': senhaAtual, 'novaSenha': novaSenha}) as Map<String, dynamic>;
+    // O token antigo deixou de valer: segue com o novo.
+    _api.token = corpo['token'] as String;
   }
 
   @override

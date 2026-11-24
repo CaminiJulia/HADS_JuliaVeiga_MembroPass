@@ -3,6 +3,9 @@ abstract final class Datas {
   /// 2026-03-05 → "05/03/2026"
   static String formatar(DateTime data) => '${_dois(data.day)}/${_dois(data.month)}/${data.year}';
 
+  /// 14:05 → "14:05"
+  static String hora(DateTime data) => '${_dois(data.hour)}:${_dois(data.minute)}';
+
   /// 2026-03-05 → "2026-03-05", como a API espera.
   static String paraApi(DateTime data) => '${data.year}-${_dois(data.month)}-${_dois(data.day)}';
 
@@ -29,6 +32,12 @@ abstract final class Datas {
     'novembro',
     'dezembro',
   ];
+
+  static const _diasDaSemana = ['segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado', 'domingo'];
+
+  /// 2026-11-24 → "terça, 24 de novembro"
+  static String diaPorExtenso(DateTime data) =>
+      '${_diasDaSemana[data.weekday - 1]}, ${data.day} de ${_meses[data.month - 1]}';
 
   /// 3 → "MAR"
   static String mesAbreviado(int mes) => _meses[mes - 1].substring(0, 3).toUpperCase();

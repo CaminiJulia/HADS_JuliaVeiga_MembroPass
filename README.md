@@ -43,9 +43,11 @@ bloqueia nem libera de forma automática.
 | Liberação de ciclo, bloqueio e auditoria | RF07, RF16 | ✅ Pagamento confirmado manualmente; auditoria imutável |
 | Benefícios | RF08 | ✅ Com vigência e planos com direito |
 | Unidades e eventos | RF11 | ✅ Com período (eventos) e planos aceitos |
+| Operadores | RF02 | ✅ Cadastro pelo administrador com senha provisória, nova senha, desativação e atividade do dia; perfil do operador (foto, celular e troca de senha) |
 | Identidade visual | RF17 | ✅ Logo, cor com verificação de contraste e prévia |
-| Área do membro (carteirinha com QR e benefícios) | RF05, RF09 | ✅ Cadastro obrigatório no primeiro acesso (dados, endereço, foto e declaração de veracidade); carteirinha vertical com foto e QR fixo assinado; benefícios e locais do plano |
-| Check-in pelo operador | RF10 | ⬜ A fazer |
+| Área do membro (carteirinha com QR e benefícios) | RF05, RF09 | ✅ Cadastro obrigatório no primeiro acesso (dados, endereço, foto e declaração de veracidade); carteirinha vertical com foto e QR dinâmico (muda a cada 30 s); benefícios e locais do plano |
+| Segurança e e-mail | RF01, HU03 | ✅ Sessão encerrada ao desativar ou trocar senha, troca obrigatória da senha provisória, recuperação por código no e-mail (Gmail/SMTP), limite por IP, helmet e auditoria das ações sobre operadores |
+| Check-in pelo operador | RF10 | ✅ Escolha do local (unidades e eventos do dia), leitura do QR pela câmera, foto do membro para conferência, recusa com motivo (bloqueada, desativada, QR antigo, plano não aceito) e alerta de vencida; leituras do dia gravadas por local |
 
 ## 🏗️ Arquitetura
 
@@ -130,6 +132,46 @@ Senha `Senha@123` para todas (organização **Clube Exemplo**):
 
 Os dados de teste também trazem membros em situações diferentes (em dia, vencendo em breve e vencido),
 três planos, dois benefícios, uma unidade e um evento.
+
+### E-mail (recuperação de senha e senha provisória)
+
+Sem configuração, a API não envia nada: os e-mails aparecem no terminal da API (bom para testar).
+Para enviar de verdade pelo Gmail, preencha no `api/.env`:
+
+1. Ative a verificação em duas etapas na conta Google.
+2. Crie uma **senha de app** em <https://myaccount.google.com/apppasswords>.
+3. Preencha `SMTP_HOST=smtp.gmail.com`, `SMTP_PORTA=465`, `SMTP_USUARIO=seu-email@gmail.com`,
+   `SMTP_SENHA=<senha de app, 16 letras>` e, se quiser, `EMAIL_REMETENTE="MembroPass <seu-email@gmail.com>"`.
+4. Reinicie a API.
+
+### Publicar online (Render + Neon, gratuito)
+
+A API roda no [Render](https://render.com) e o banco no [Neon](https://neon.tech), ambos no plano gratuito.
+No Render gratuito a API "dorme" após 15 minutos sem uso; o primeiro acesso depois disso leva perto de
+1 minuto (o app espera e já acorda a API ao abrir). O Render gratuito também bloqueia SMTP, por isso os
+e-mails saem por um Google Apps Script na conta do Gmail.
+
+1. **Banco:** crie um projeto no Neon e copie a *connection string*. Dentro de `api/`, rode
+   `node scripts/preparar-producao.mjs "<connection string>" --organizacao "Nome" --cnpj 00000000000000 --admin "Seu Nome" --email voce@exemplo.com`.
+   O script cria as tabelas (sem dados de teste) e mostra a senha provisória do primeiro administrador.
+2. **E-mail:** publique `api/scripts/envio-email.gs` como app da Web (passo a passo no próprio arquivo).
+3. **API:** no Render, *New > Blueprint* com este repositório (usa o `render.yaml`). Preencha `DATABASE_URL`,
+   `EMAIL_APPS_SCRIPT_URL` e `EMAIL_APPS_SCRIPT_SEGREDO`. O `JWT_SECRET` é gerado pelo Render.
+4. **App:** gere o instalador apontando para a API online:
+   `flutter build apk --release --dart-define=API_URL=https://<sua-api>.onrender.com`
+   (o APK fica em `app/build/app/outputs/flutter-apk/app-release.apk`). No iPhone, é preciso um Mac com Xcode.
+
+### Segurança
+
+- **Sessão:** o token só vale enquanto a conta estiver ativa. Desativar alguém, trocar ou redefinir a senha
+  encerra as sessões abertas na hora.
+- **Senha provisória:** membros e operadores cadastrados pelo admin recebem uma senha provisória
+  (na tela e por e-mail) e precisam criar a própria no primeiro acesso.
+- **Recuperação:** código de 6 dígitos por e-mail, válido por 15 minutos, uso único, até 5 tentativas.
+- **Limites:** 5 erros de senha bloqueiam o e-mail por 1 minuto; por IP, 10 logins e 5 pedidos de código por minuto.
+- **QR Code dinâmico:** o app gera um código novo a cada 30 s (funciona sem internet depois de abrir a
+  carteirinha). Foto ou captura de tela expira em cerca de 1 minuto.
+- **Segredo:** em produção (`NODE_ENV=production`), a API não sobe com o `JWT_SECRET` de exemplo ou curto.
 
 ### Testes automatizados
 

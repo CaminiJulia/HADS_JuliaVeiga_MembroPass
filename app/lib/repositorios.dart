@@ -4,6 +4,8 @@ import 'package:provider/single_child_widget.dart';
 import 'core/api/cliente_api.dart';
 import 'features/area_membro/data/area_membro_repositorio.dart';
 import 'features/area_membro/domain/carteirinha_membro.dart';
+import 'features/area_operador/data/operador_repositorio.dart';
+import 'features/area_operador/domain/checkin.dart';
 import 'features/auditoria/data/auditoria_repositorio_api.dart';
 import 'features/auditoria/domain/registro_auditoria.dart';
 import 'features/auth/data/auth_repositorio_api.dart';
@@ -17,6 +19,8 @@ import 'features/identidade/domain/organizacao.dart';
 import 'features/membros/data/membros_repositorio_api.dart';
 import 'features/membros/data/membros_repositorio_mock.dart';
 import 'features/membros/domain/membros_repositorio.dart';
+import 'features/operadores/data/operadores_repositorio.dart';
+import 'features/operadores/domain/operador.dart';
 import 'features/perfil/data/perfil_repositorio.dart';
 import 'features/perfil/domain/perfil.dart';
 import 'features/planos/data/planos_repositorio_api.dart';
@@ -38,6 +42,8 @@ class Repositorios {
     required this.organizacao,
     required this.perfil,
     required this.areaMembro,
+    required this.operador,
+    required this.operadores,
   });
 
   /// Implementações que falam com a API, compartilhando o mesmo token.
@@ -51,11 +57,17 @@ class Repositorios {
     organizacao: OrganizacaoRepositorioApi(api),
     perfil: PerfilRepositorioApi(api),
     areaMembro: AreaMembroRepositorioApi(api),
+    operador: OperadorRepositorioApi(api),
+    operadores: OperadoresRepositorioApi(api),
   );
 
   /// Implementações em memória, para os testes. [areaMembro] permite simular
-  /// uma carteirinha bloqueada ou vencida.
-  factory Repositorios.simulados({AreaMembroRepositorio? areaMembro}) {
+  /// uma carteirinha bloqueada ou vencida; [operador], conferir os check-ins.
+  factory Repositorios.simulados({
+    AreaMembroRepositorio? areaMembro,
+    OperadorRepositorio? operador,
+    PerfilRepositorio? perfil,
+  }) {
     final membros = MembrosRepositorioMock();
     return Repositorios(
       auth: AuthRepositorioMock(latencia: Duration.zero),
@@ -65,8 +77,10 @@ class Repositorios {
       auditoria: AuditoriaRepositorioMock(membros),
       unidades: UnidadesRepositorioMock(),
       organizacao: OrganizacaoRepositorioMock(),
-      perfil: PerfilRepositorioMock(),
+      perfil: perfil ?? PerfilRepositorioMock(),
       areaMembro: areaMembro ?? AreaMembroRepositorioMock(),
+      operador: operador ?? OperadorRepositorioMock(),
+      operadores: OperadoresRepositorioMock(),
     );
   }
 
@@ -79,6 +93,8 @@ class Repositorios {
   final OrganizacaoRepositorio organizacao;
   final PerfilRepositorio perfil;
   final AreaMembroRepositorio areaMembro;
+  final OperadorRepositorio operador;
+  final OperadoresRepositorio operadores;
 
   List<SingleChildWidget> get providers => [
     Provider<AuthRepositorio>.value(value: auth),
@@ -90,5 +106,7 @@ class Repositorios {
     Provider<OrganizacaoRepositorio>.value(value: organizacao),
     Provider<PerfilRepositorio>.value(value: perfil),
     Provider<AreaMembroRepositorio>.value(value: areaMembro),
+    Provider<OperadorRepositorio>.value(value: operador),
+    Provider<OperadoresRepositorio>.value(value: operadores),
   ];
 }

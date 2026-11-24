@@ -9,8 +9,17 @@ abstract interface class AuthRepositorio {
   /// Lança [CredenciaisInvalidasException] se o e-mail ou a senha não conferem.
   Future<Usuario> entrar({required String email, required String senha});
 
-  /// Solicita o envio do link de redefinição de senha (HU03).
+  /// Envia um código de 6 dígitos para o e-mail (HU03). A resposta é a mesma
+  /// exista ou não o cadastro.
   Future<void> solicitarRecuperacaoSenha(String email);
+
+  /// Cria uma senha nova com o código recebido por e-mail. Lança `ErroApi`
+  /// com a mensagem pronta se o código estiver errado ou vencido.
+  Future<void> redefinirSenha({required String email, required String codigo, required String novaSenha});
+
+  /// Troca a senha de quem está logado (inclusive a provisória). As outras
+  /// sessões são encerradas; esta continua com um token novo.
+  Future<void> trocarSenha({required String senhaAtual, required String novaSenha});
 
   /// Encerra a sessão (descarta o token do login).
   void sair();

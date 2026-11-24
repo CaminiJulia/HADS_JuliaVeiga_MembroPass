@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/formatacao/datas.dart';
@@ -89,7 +88,7 @@ class _TelaMembrosState extends State<TelaMembros> {
     ).push<MembroCriado>(MaterialPageRoute(builder: (_) => const TelaFormularioMembro()));
     if (criado == null || !mounted) return;
     await _carregar();
-    if (mounted) await mostrarSenhaProvisoria(context, criado);
+    if (mounted) await mostrarSenhaDoMembro(context, criado);
   }
 
   Future<void> _abrirDetalhe(Membro membro) async {
@@ -451,52 +450,11 @@ class _BarraCiclo extends StatelessWidget {
 }
 
 /// Mostra a senha provisória do membro recém-cadastrado, com opção de copiar.
-Future<void> mostrarSenhaProvisoria(BuildContext context, MembroCriado criado) {
-  return showDialog<void>(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) => AlertDialog(
-      icon: const Icon(Icons.verified_user_outlined, color: Cores.sucesso),
-      title: Text('Cadastro de ${criado.membro.nome} criado'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text(
-            'A carteirinha já foi emitida. Repasse ao membro o e-mail e a senha provisória para o primeiro acesso:',
-          ),
-          const SizedBox(height: 16),
-          SelectableText(criado.membro.email, textAlign: TextAlign.center),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(color: Cores.fundo, borderRadius: BorderRadius.circular(12)),
-            child: SelectableText(
-              criado.senhaProvisoria,
-              key: const Key('senha-provisoria'),
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700, letterSpacing: 2),
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Esta senha não será mostrada de novo.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Cores.textoSecundario, fontSize: 12),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton.icon(
-          onPressed: () {
-            Clipboard.setData(ClipboardData(text: criado.senhaProvisoria));
-            avisar(context, 'Senha copiada.');
-          },
-          icon: const Icon(Icons.copy, size: 18),
-          label: const Text('Copiar senha'),
-        ),
-        FilledButton(onPressed: () => Navigator.pop(context), child: const Text('Pronto')),
-      ],
-    ),
-  );
-}
+Future<void> mostrarSenhaDoMembro(BuildContext context, MembroCriado criado) => mostrarSenhaProvisoria(
+  context,
+  titulo: 'Cadastro de ${criado.membro.nome} criado',
+  mensagem: 'A carteirinha já foi emitida. Repasse ao membro o e-mail e a senha provisória para o primeiro acesso:',
+  email: criado.membro.email,
+  senha: criado.senhaProvisoria,
+  emailEnviado: criado.emailEnviado,
+);

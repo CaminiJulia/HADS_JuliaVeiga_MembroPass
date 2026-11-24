@@ -21,7 +21,11 @@ class MembrosRepositorioApi implements MembrosRepositorio {
   @override
   Future<MembroCriado> criar(DadosMembro dados) async {
     final json = await _api.post('/membros', dados.paraJson()) as Map<String, dynamic>;
-    return MembroCriado(_membro(json['membro']), json['senhaProvisoria'] as String);
+    return MembroCriado(
+      _membro(json['membro']),
+      json['senhaProvisoria'] as String,
+      emailEnviado: json['emailEnviado'] as bool? ?? false,
+    );
   }
 
   @override

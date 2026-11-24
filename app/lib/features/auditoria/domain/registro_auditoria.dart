@@ -7,7 +7,12 @@ enum AcaoAuditoria {
   desbloqueio('Carteirinha desbloqueada', Icons.lock_open_outlined),
   desativacaoMembro('Cadastro desativado', Icons.person_off_outlined),
   reativacaoMembro('Cadastro reativado', Icons.person_outline),
-  edicaoPlano('Plano editado', Icons.edit_note);
+  edicaoPlano('Plano editado', Icons.edit_note),
+  cadastroOperador('Operador cadastrado', Icons.badge_outlined),
+  edicaoOperador('Operador editado', Icons.edit_outlined),
+  desativacaoOperador('Operador desativado', Icons.person_off_outlined),
+  reativacaoOperador('Operador reativado', Icons.person_add_alt_outlined),
+  novaSenhaOperador('Nova senha de operador', Icons.key_outlined);
 
   const AcaoAuditoria(this.rotulo, this.icone);
 

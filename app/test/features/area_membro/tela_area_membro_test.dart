@@ -34,9 +34,10 @@ void main() {
     expect(find.byKey(const Key('aviso-situacao-carteirinha')), findsNothing);
     expect(find.text('Nº 38F29DBA'), findsOneWidget);
     expect(tester.widget<QrImageView>(find.byKey(const Key('qr-carteirinha'))), isNotNull);
+    expect(find.textContaining('muda a cada 30 s'), findsOneWidget);
   });
 
-  testWidgets('o QR Code é fixo: não é buscado de novo com o tempo', (tester) async {
+  testWidgets('o QR Code é dinâmico, gerado no celular: não busca a API de novo', (tester) async {
     final area = AreaMembroRepositorioMock();
     await entrarComoMembro(tester, area);
 
@@ -63,7 +64,7 @@ void main() {
     await tester.tap(find.byKey(const Key('botao-ampliar-qr')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('qr-ampliado')), findsOneWidget);
-    expect(find.text('Toque para fechar'), findsOneWidget);
+    expect(find.textContaining('Toque para fechar'), findsOneWidget);
     expect(find.byType(QrImageView), findsNWidgets(2));
 
     await tester.tap(find.byKey(const Key('qr-ampliado')));

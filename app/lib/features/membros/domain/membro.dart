@@ -149,8 +149,11 @@ class DadosMembro {
 
 /// Resposta do cadastro: o membro e a senha provisória para repassar a ele.
 class MembroCriado {
-  const MembroCriado(this.membro, this.senhaProvisoria);
+  const MembroCriado(this.membro, this.senhaProvisoria, {this.emailEnviado = false});
 
   final Membro membro;
   final String senhaProvisoria;
+
+  /// A API conseguiu mandar a senha para o e-mail do membro.
+  final bool emailEnviado;
 }

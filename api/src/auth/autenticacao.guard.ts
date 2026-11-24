@@ -12,7 +12,9 @@ import {
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
+import { BancoService } from '../banco/banco.service';
 import type { Papel } from './auth.service';
+import { TABELA_DA_CONTA } from './contas';
 
 // Dados do token de quem fez a requisição (RF02).
 export interface UsuarioLogado {
@@ -25,6 +27,7 @@ interface ConteudoToken {
   sub: string;
   papel: Papel;
   organizacaoId: string;
+  sv: number; // versão da sessão
 }
 
 type RequisicaoComUsuario = Request & { usuario?: UsuarioLogado };
@@ -50,6 +53,7 @@ export class AutenticacaoGuard implements CanActivate {
   constructor(
     private readonly jwt: JwtService,
     private readonly reflector: Reflector,
+    private readonly banco: BancoService,
   ) {}
 
   async canActivate(contexto: ExecutionContext) {
@@ -66,6 +70,22 @@ export class AutenticacaoGuard implements CanActivate {
       conteudo = await this.jwt.verifyAsync<ConteudoToken>(token);
     } catch {
       throw new UnauthorizedException('Sua sessão expirou. Entre novamente.');
+    }
+
+    // O token sozinho não basta: a conta precisa continuar ativa, numa
+    // organização não suspensa, e sem troca de senha depois da emissão.
+    // Assim desativar alguém ou redefinir a senha encerra a sessão na hora.
+    const [ativa] = await this.banco.consultar(
+      `SELECT 1 FROM ${TABELA_DA_CONTA[conteudo.papel]} c
+       JOIN organizacao o ON o.id = c.organizacao_id AND o.status <> 'SUSPENSA'
+       WHERE c.id = $1 AND c.status = 'ATIVO'
+         AND c.versao_sessao = $2`,
+      [conteudo.sub, conteudo.sv ?? 0],
+    );
+    if (!ativa) {
+      throw new UnauthorizedException(
+        'Sua sessão foi encerrada. Entre novamente.',
+      );
     }
 
     const papeis = this.reflector.getAllAndOverride<Papel[] | undefined>(

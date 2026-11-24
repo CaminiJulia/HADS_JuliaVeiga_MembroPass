@@ -7,7 +7,12 @@ export type AcaoAuditoria =
   | 'DESBLOQUEIO'
   | 'DESATIVACAO_MEMBRO'
   | 'REATIVACAO_MEMBRO'
-  | 'EDICAO_PLANO';
+  | 'EDICAO_PLANO'
+  | 'CADASTRO_OPERADOR'
+  | 'EDICAO_OPERADOR'
+  | 'DESATIVACAO_OPERADOR'
+  | 'REATIVACAO_OPERADOR'
+  | 'NOVA_SENHA_OPERADOR';
 
 export interface RegistroAuditoria {
   id: string;

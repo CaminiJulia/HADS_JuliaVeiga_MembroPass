@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart';
+
 import '../../../core/formatacao/datas.dart';
 import '../../beneficios/domain/beneficio.dart';
 import '../../membros/domain/membro.dart';
@@ -22,6 +24,64 @@ enum SituacaoCarteirinha {
   bool get semQr => this == bloqueada || this == invalidada;
 }
 
+/// Chave do QR Code dinâmico (RF05), entregue pela API junto com a
+/// carteirinha. Com ela o app gera sozinho, mesmo sem internet, um código novo
+/// a cada [passoSegundos], no mesmo formato que a API confere no check-in:
+///
+///   `MP2.{id da carteirinha}.{versão}.{passo}.{assinatura}`
+///   passo      = segundos desde 1970 / passoSegundos
+///   assinatura = HMAC-SHA256(chave, passo), 12 primeiros bytes, base64url
+///
+/// Uma foto ou captura de tela do QR para de valer em cerca de um minuto.
+class ChaveQr {
+  const ChaveQr({
+    required this.carteirinhaId,
+    required this.versao,
+    required this.chave,
+    this.passoSegundos = 30,
+    this.diferencaRelogio = Duration.zero,
+  });
+
+  /// [agoraLocal]: quando a resposta chegou, para medir a diferença entre o
+  /// relógio do celular e o do servidor.
+  factory ChaveQr.deJson(Map<String, dynamic> json, {DateTime? agoraLocal}) {
+    final servidor = DateTime.fromMillisecondsSinceEpoch(json['agora'] as int);
+    return ChaveQr(
+      carteirinhaId: json['carteirinhaId'] as String,
+      versao: json['versao'] as int,
+      chave: base64Decode(json['chave'] as String),
+      passoSegundos: json['passoSegundos'] as int? ?? 30,
+      diferencaRelogio: servidor.difference(agoraLocal ?? DateTime.now()),
+    );
+  }
+
+  final String carteirinhaId;
+  final int versao;
+  final Uint8List chave;
+  final int passoSegundos;
+
+  /// Quanto o relógio do servidor está à frente do celular. Corrige celulares
+  /// com a hora errada, que gerariam códigos de outro passo.
+  final Duration diferencaRelogio;
+
+  int passo(DateTime agora) => agora.add(diferencaRelogio).millisecondsSinceEpoch ~/ 1000 ~/ passoSegundos;
+
+  /// O texto do QR Code neste momento.
+  String codigo(DateTime agora) {
+    final p = passo(agora);
+    final assinatura = Hmac(sha256, chave).convert(utf8.encode('$p')).bytes.sublist(0, 12);
+    // 12 bytes viram 16 caracteres, sem o "=" de preenchimento.
+    return 'MP2.$carteirinhaId.$versao.$p.${base64Url.encode(assinatura)}';
+  }
+
+  /// Quanto falta para o código mudar.
+  Duration ateProximoCodigo(DateTime agora) {
+    final ms = agora.add(diferencaRelogio).millisecondsSinceEpoch;
+    final passoMs = passoSegundos * 1000;
+    return Duration(milliseconds: passoMs - ms % passoMs);
+  }
+}
+
 /// Carteirinha do membro logado (RF05), com o QR Code do check-in.
 class CarteirinhaMembro {
   const CarteirinhaMembro({
@@ -33,7 +93,7 @@ class CarteirinhaMembro {
     required this.dataVencimento,
     this.planoCor,
     this.foto,
-    this.qrCodigo,
+    this.qr,
   });
 
   factory CarteirinhaMembro.deJson(Map<String, dynamic> json) {
@@ -41,6 +101,7 @@ class CarteirinhaMembro {
     final plano = json['plano'] as Map<String, dynamic>;
     final carteirinha = json['carteirinha'] as Map<String, dynamic>;
     final qr = json['qr'] as Map<String, dynamic>?;
+    final agora = DateTime.now();
     return CarteirinhaMembro(
       nomeMembro: membro['nome'] as String,
       foto: membro['foto'] == null ? null : base64Decode(membro['foto'] as String),
@@ -50,7 +111,7 @@ class CarteirinhaMembro {
       status: StatusCarteirinha.values.byName((carteirinha['status'] as String).toLowerCase()),
       dataEmissao: Datas.daApi(carteirinha['dataEmissao'] as String)!,
       dataVencimento: Datas.daApi(carteirinha['dataVencimento'] as String)!,
-      qrCodigo: qr?['codigo'] as String?,
+      qr: qr == null ? null : ChaveQr.deJson(qr, agoraLocal: agora),
     );
   }
 
@@ -67,8 +128,8 @@ class CarteirinhaMembro {
   final DateTime dataEmissao;
   final DateTime dataVencimento;
 
-  /// Código fixo assinado pela API; `null` quando a carteirinha está bloqueada.
-  final String? qrCodigo;
+  /// Chave do QR dinâmico; `null` quando a carteirinha está bloqueada.
+  final ChaveQr? qr;
 
   /// Dias até o vencimento (negativo se já venceu).
   int diasParaVencer(DateTime hoje) => dataVencimento.difference(hoje).inDays;

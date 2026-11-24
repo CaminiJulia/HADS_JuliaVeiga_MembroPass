@@ -5,12 +5,14 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/tema/cores.dart';
+import '../../../core/validacao/validadores.dart';
 import '../../../core/widgets/componentes.dart';
 import '../../auth/presentation/sair.dart';
 import '../domain/perfil.dart';
 import 'avatar_perfil.dart';
 
-/// Aba "Meu perfil" do administrador: foto, dados de contato, senha e saída.
+/// "Meu perfil" do administrador e do operador: foto, dados de contato,
+/// senha e saída. O cargo só aparece para o administrador.
 class TelaPerfil extends StatefulWidget {
   const TelaPerfil({super.key});
 
@@ -158,7 +160,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
         DadosPerfil(
           nome: _nome.text.trim(),
           telefone: opcional(_telefone),
-          cargo: opcional(_cargo),
+          cargo: _perfil!.temCargo ? opcional(_cargo) : null,
           manterFoto: !_fotoAlterada,
           foto: _foto,
           fotoTipo: _fotoTipo,
@@ -218,7 +220,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
   Widget _conteudo(Perfil perfil) {
     final texto = Theme.of(context).textTheme;
     final nomeAtual = _nome.text.trim().isEmpty ? perfil.nome : _nome.text.trim();
-    final cargoAtual = _cargo.text.trim();
+    final cargoAtual = perfil.temCargo ? _cargo.text.trim() : '';
     final iniciais = Perfil(id: '', nome: nomeAtual, email: '', organizacaoNome: '').iniciais;
 
     return Align(
@@ -295,7 +297,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
                       const Icon(Icons.verified_user_outlined, size: 16, color: Cores.primaria),
                       const SizedBox(width: 6),
                       Text(
-                        'Administrador',
+                        perfil.rotuloPapel,
                         style: texto.labelMedium?.copyWith(color: Cores.primaria, fontWeight: FontWeight.w700),
                       ),
                     ],
@@ -318,21 +320,23 @@ class _TelaPerfilState extends State<TelaPerfil> {
                 ),
                 validator: (v) => (v ?? '').trim().isEmpty ? 'Informe seu nome.' : null,
               ),
-              const SizedBox(height: 14),
-              TextFormField(
-                key: const Key('campo-cargo-perfil'),
-                controller: _cargo,
-                enabled: !_salvando,
-                textCapitalization: TextCapitalization.sentences,
-                textInputAction: TextInputAction.next,
-                maxLength: 80,
-                decoration: const InputDecoration(
-                  labelText: 'Cargo ou função (opcional)',
-                  hintText: 'Ex.: Coordenação, Secretaria',
-                  prefixIcon: Icon(Icons.work_outline),
-                  counterText: '',
+              if (perfil.temCargo) ...[
+                const SizedBox(height: 14),
+                TextFormField(
+                  key: const Key('campo-cargo-perfil'),
+                  controller: _cargo,
+                  enabled: !_salvando,
+                  textCapitalization: TextCapitalization.sentences,
+                  textInputAction: TextInputAction.next,
+                  maxLength: 80,
+                  decoration: const InputDecoration(
+                    labelText: 'Cargo ou função (opcional)',
+                    hintText: 'Ex.: Coordenação, Secretaria',
+                    prefixIcon: Icon(Icons.work_outline),
+                    counterText: '',
+                  ),
                 ),
-              ),
+              ],
               const SizedBox(height: 14),
               TextFormField(
                 key: const Key('campo-telefone-perfil'),
@@ -440,14 +444,6 @@ class _DialogoTrocarSenhaState extends State<_DialogoTrocarSenha> {
     super.dispose();
   }
 
-  /// Mesmas regras da API: 8+ caracteres, com letras e números.
-  static String? _validarNova(String? v) {
-    final s = v ?? '';
-    if (s.length < 8) return 'Use pelo menos 8 caracteres.';
-    if (!RegExp(r'[A-Za-z]').hasMatch(s) || !RegExp(r'\d').hasMatch(s)) return 'Use letras e números.';
-    return null;
-  }
-
   Future<void> _enviar() async {
     setState(() => _erro = null);
     if (!_formulario.currentState!.validate()) return;
@@ -501,7 +497,7 @@ class _DialogoTrocarSenhaState extends State<_DialogoTrocarSenha> {
                 decoration: decoracao(
                   'Nova senha',
                 ).copyWith(helperText: 'Mínimo de 8 caracteres, com letras e números.'),
-                validator: _validarNova,
+                validator: Validadores.novaSenha,
               ),
               const SizedBox(height: 12),
               TextFormField(

@@ -3,11 +3,21 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import * as bcrypt from 'bcryptjs';
 import { BancoService } from '../banco/banco.service';
-import { SalvarPerfilDto, TrocarSenhaDto } from './dto/perfil.dto';
+import { SalvarPerfilDto } from './dto/perfil.dto';
 
 const TAMANHO_MAXIMO_FOTO = 512 * 1024;
+
+// Papéis com a aba "Meu perfil". O membro tem a própria área (area-membro).
+export type PapelComPerfil = 'administrador' | 'operador';
+
+// Tabela de cada papel. O nome vai direto no SQL, então só sai desta lista
+// fixa, nunca da requisição. O operador não tem cargo: o papel já diz a função.
+const CADASTRO: Record<PapelComPerfil, { tabela: string; temCargo: boolean }> =
+  {
+    administrador: { tabela: 'administrador', temCargo: true },
+    operador: { tabela: 'operador', temCargo: false },
+  };
 
 interface LinhaPerfil {
   id: string;
@@ -20,23 +30,25 @@ interface LinhaPerfil {
   organizacao_nome: string;
 }
 
-// Perfil do administrador logado: só a própria conta, nunca a de outro.
+// Perfil de quem está logado: só a própria conta, nunca a de outro.
 @Injectable()
 export class PerfilService {
   constructor(private readonly banco: BancoService) {}
 
-  async buscar(id: string) {
+  async buscar(papel: PapelComPerfil, id: string) {
+    const { tabela, temCargo } = CADASTRO[papel];
     const [linha] = await this.banco.consultar<LinhaPerfil>(
-      `SELECT a.id, a.nome, a.email, a.telefone, a.cargo, a.foto, a.foto_tipo,
-              o.nome AS organizacao_nome
-       FROM administrador a
-       JOIN organizacao o ON o.id = a.organizacao_id
-       WHERE a.id = $1 AND a.status = 'ATIVO'`,
+      `SELECT u.id, u.nome, u.email, u.telefone, ${temCargo ? 'u.cargo' : 'NULL'} AS cargo,
+              u.foto, u.foto_tipo, o.nome AS organizacao_nome
+       FROM ${tabela} u
+       JOIN organizacao o ON o.id = u.organizacao_id
+       WHERE u.id = $1 AND u.status = 'ATIVO'`,
       [id],
     );
     if (!linha) throw new NotFoundException('Conta não encontrada.');
     return {
       id: linha.id,
+      papel,
       nome: linha.nome,
       email: linha.email,
       telefone: linha.telefone,
@@ -47,7 +59,8 @@ export class PerfilService {
     };
   }
 
-  async salvar(id: string, dados: SalvarPerfilDto) {
+  async salvar(papel: PapelComPerfil, id: string, dados: SalvarPerfilDto) {
+    const { tabela, temCargo } = CADASTRO[papel];
     const foto =
       typeof dados.foto === 'string' ? Buffer.from(dados.foto, 'base64') : null;
     if (foto && foto.length > TAMANHO_MAXIMO_FOTO) {
@@ -55,39 +68,23 @@ export class PerfilService {
     }
 
     await this.banco.transacao(async (consultar) => {
-      await consultar(
-        'UPDATE administrador SET nome = $2, telefone = $3, cargo = $4 WHERE id = $1',
-        [id, dados.nome, dados.telefone ?? null, dados.cargo ?? null],
-      );
+      await (temCargo
+        ? consultar(
+            `UPDATE ${tabela} SET nome = $2, telefone = $3, cargo = $4 WHERE id = $1`,
+            [id, dados.nome, dados.telefone ?? null, dados.cargo ?? null],
+          )
+        : consultar(
+            `UPDATE ${tabela} SET nome = $2, telefone = $3 WHERE id = $1`,
+            [id, dados.nome, dados.telefone ?? null],
+          ));
       // Foto ausente na requisição: mantém a atual.
       if (dados.foto !== undefined) {
         await consultar(
-          'UPDATE administrador SET foto = $2, foto_tipo = $3 WHERE id = $1',
+          `UPDATE ${tabela} SET foto = $2, foto_tipo = $3 WHERE id = $1`,
           [id, foto, foto ? dados.fotoTipo : null],
         );
       }
     });
-    return this.buscar(id);
-  }
-
-  async trocarSenha(id: string, dados: TrocarSenhaDto) {
-    const [conta] = await this.banco.consultar<{ senha_hash: string }>(
-      `SELECT senha_hash FROM administrador WHERE id = $1 AND status = 'ATIVO'`,
-      [id],
-    );
-    if (!conta) throw new NotFoundException('Conta não encontrada.');
-    if (!(await bcrypt.compare(dados.senhaAtual, conta.senha_hash))) {
-      throw new BadRequestException('A senha atual está incorreta.');
-    }
-    if (dados.senhaAtual === dados.novaSenha) {
-      throw new BadRequestException(
-        'A nova senha precisa ser diferente da atual.',
-      );
-    }
-    const hash = await bcrypt.hash(dados.novaSenha, 10);
-    await this.banco.consultar(
-      'UPDATE administrador SET senha_hash = $2 WHERE id = $1',
-      [id, hash],
-    );
+    return this.buscar(papel, id);
   }
 }

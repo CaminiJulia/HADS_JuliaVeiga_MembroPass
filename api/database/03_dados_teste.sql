@@ -46,10 +46,14 @@ INSERT INTO unidade_evento (id, organizacao_id, nome, tipo, localizacao, data_in
     ('00000000-0000-0000-0000-0000000000e1', '00000000-0000-0000-0000-000000000001',
      'Sede Central', 'UNIDADE', 'Rua das Flores, 100 - Centro', NULL, NULL),
     ('00000000-0000-0000-0000-0000000000e2', '00000000-0000-0000-0000-000000000001',
-     'Torneio de Verão', 'EVENTO', 'Ginásio Municipal', CURRENT_DATE + 20, CURRENT_DATE + 22);
+     'Torneio de Verão', 'EVENTO', 'Ginásio Municipal', CURRENT_DATE + 20, CURRENT_DATE + 22),
+    ('00000000-0000-0000-0000-0000000000e3', '00000000-0000-0000-0000-000000000001',
+     'Clínica de Tênis', 'EVENTO', 'Quadra 2 da Sede', CURRENT_DATE, CURRENT_DATE + 1);
 
--- Sede: todos os planos. Torneio: só Trimestral e Anual.
+-- Sede: todos os planos. Torneio e Clínica (acontecendo hoje): só Trimestral e Anual.
 INSERT INTO unidade_evento_plano (unidade_evento_id, plano_id)
 SELECT '00000000-0000-0000-0000-0000000000e1'::uuid, p.id FROM plano_associacao p
 UNION ALL
-SELECT '00000000-0000-0000-0000-0000000000e2'::uuid, p.id FROM plano_associacao p WHERE p.nome IN ('Trimestral', 'Anual');
+SELECT '00000000-0000-0000-0000-0000000000e2'::uuid, p.id FROM plano_associacao p WHERE p.nome IN ('Trimestral', 'Anual')
+UNION ALL
+SELECT '00000000-0000-0000-0000-0000000000e3'::uuid, p.id FROM plano_associacao p WHERE p.nome IN ('Trimestral', 'Anual');

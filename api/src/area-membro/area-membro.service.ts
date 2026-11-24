@@ -10,7 +10,11 @@ import {
   CompletarCadastroDto,
 } from './dto/completar-cadastro.dto';
 import { SalvarFotoDto } from './dto/salvar-foto.dto';
-import { QrCarteirinha } from './qr-carteirinha';
+import {
+  numeroCarteirinha,
+  PASSO_SEGUNDOS,
+  QrCarteirinha,
+} from './qr-carteirinha';
 
 const TAMANHO_MAXIMO_FOTO = 512 * 1024;
 
@@ -102,14 +106,21 @@ export class AreaMembroService {
     // O sistema nunca bloqueia sozinho: vencida, mas ativa, ainda tem QR.
     // Só a administração bloqueia ou invalida, e aí o QR deixa de existir.
     // Com o cadastro obrigatório, antes de confirmá-lo também não há QR.
+    // O app recebe a chave e gera sozinho o código de cada 30 segundos.
+    // `agora` (relógio do servidor) corrige o relógio do celular, se estiver
+    // adiantado ou atrasado.
     const qr =
       l.status === 'ATIVA' &&
       (l.cadastro_confirmado_em || !CADASTRO_OBRIGATORIO)
-        ? await this.qr.gerar({
-            c: l.carteirinha_id,
-            v: l.qr_versao,
-            o: organizacaoId,
-          })
+        ? {
+            carteirinhaId: l.carteirinha_id,
+            versao: l.qr_versao,
+            chave: this.qr
+              .chave(l.carteirinha_id, l.qr_versao)
+              .toString('base64'),
+            passoSegundos: PASSO_SEGUNDOS,
+            agora: Date.now(),
+          }
         : null;
 
     return {
@@ -122,8 +133,7 @@ export class AreaMembroService {
       },
       plano: { id: l.plano_id, nome: l.plano_nome, cor: l.plano_cor },
       carteirinha: {
-        // Número curto para conferência visual, derivado do id.
-        numero: l.carteirinha_id.replace(/-/g, '').slice(0, 8).toUpperCase(),
+        numero: numeroCarteirinha(l.carteirinha_id),
         status: l.status,
         dataEmissao: l.data_emissao,
         dataVencimento: l.data_vencimento,

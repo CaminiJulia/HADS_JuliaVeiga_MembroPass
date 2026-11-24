@@ -5,5 +5,6 @@ import 'core/api/cliente_api.dart';
 import 'repositorios.dart';
 
 void main() {
-  runApp(MembroPassApp(repositorios: Repositorios.api(ClienteApi())));
+  final api = ClienteApi()..acordar();
+  runApp(MembroPassApp(repositorios: Repositorios.api(api)));
 }

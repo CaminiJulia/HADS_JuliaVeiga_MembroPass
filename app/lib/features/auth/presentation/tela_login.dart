@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../../core/rotas.dart';
 import '../../../core/validacao/validadores.dart';
 import 'login_controller.dart';
+import 'tela_senha_provisoria.dart';
 import 'widgets/aviso_erro.dart';
 import 'widgets/visual_entrada.dart';
 
@@ -40,6 +41,16 @@ class _TelaLoginState extends State<TelaLogin> {
 
     TextInput.finishAutofillContext();
     // Limpa a pilha: o botão voltar não deve retornar ao login nem às boas-vindas.
+    if (usuario.senhaProvisoria) {
+      // Senha gerada pelo administrador: primeiro cria uma senha própria.
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => TelaSenhaProvisoria(usuario: usuario, senhaProvisoria: _senha.text),
+        ),
+        (_) => false,
+      );
+      return;
+    }
     Navigator.of(context).pushNamedAndRemoveUntil(Rotas.inicialDo(usuario.papel), (_) => false, arguments: usuario);
   }
 

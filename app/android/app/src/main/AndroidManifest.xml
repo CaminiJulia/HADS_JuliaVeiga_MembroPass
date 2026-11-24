@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Falar com a API online (o APK de release não tem esta permissão por padrão). -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <application
-        android:label="membropass"
+        android:label="MembroPass"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

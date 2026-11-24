@@ -7,12 +7,14 @@ abstract final class Rotas {
   static const areaAdministrador = '/administrador';
   static const areaOperador = '/operador';
   static const areaMembro = '/membro';
+  static const perfilOperador = '/operador/perfil';
   static const planos = '/administrador/planos';
   static const beneficios = '/administrador/beneficios';
   static const membros = '/administrador/membros';
   static const ciclos = '/administrador/ciclos';
   static const auditoria = '/administrador/auditoria';
   static const unidades = '/administrador/unidades';
+  static const operadores = '/administrador/operadores';
   static const identidade = '/administrador/identidade';
   static const perfil = '/administrador/perfil';
 

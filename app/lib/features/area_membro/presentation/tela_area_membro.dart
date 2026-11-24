@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
 
@@ -168,16 +169,27 @@ class _TelaAreaMembroState extends State<TelaAreaMembro> {
 
 /// QR Code ampliado: ocupa a largura da tela, com nome e número para o
 /// operador conferir. Toque em qualquer lugar para fechar.
-class _QrAmpliado extends StatelessWidget {
-  const _QrAmpliado({required this.codigo, required this.nome, required this.numero});
+class _QrAmpliado extends StatefulWidget {
+  const _QrAmpliado({required this.qr, required this.nome, required this.numero});
 
-  final String codigo;
+  final ChaveQr qr;
   final String nome;
   final String numero;
 
   @override
+  State<_QrAmpliado> createState() => _QrAmpliadoState();
+}
+
+class _QrAmpliadoState extends State<_QrAmpliado> with _AtualizaQr {
+  @override
+  ChaveQr? get chaveQr => widget.qr;
+
+  @override
   Widget build(BuildContext context) {
     final texto = Theme.of(context).textTheme;
+    final nome = widget.nome;
+    final numero = widget.numero;
+    final codigo = widget.qr.codigo(DateTime.now());
     return SafeArea(
       child: GestureDetector(
         key: const Key('qr-ampliado'),
@@ -227,7 +239,13 @@ class _QrAmpliado extends StatelessWidget {
                         children: [
                           const Icon(Icons.touch_app_outlined, size: 18, color: Colors.black45),
                           const SizedBox(width: 6),
-                          Text('Toque para fechar', style: texto.bodySmall?.copyWith(color: Colors.black54)),
+                          Flexible(
+                            child: Text(
+                              'Toque para fechar · o código muda a cada ${widget.qr.passoSegundos} s',
+                              textAlign: TextAlign.center,
+                              style: texto.bodySmall?.copyWith(color: Colors.black54),
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -242,6 +260,37 @@ class _QrAmpliado extends StatelessWidget {
   }
 }
 
+/// Redesenha o QR quando o código muda (na virada de cada passo de 30 s).
+/// Um timer só por passo, não por segundo: a tela fica parada no meio tempo.
+mixin _AtualizaQr<T extends StatefulWidget> on State<T> {
+  ChaveQr? get chaveQr;
+  Timer? _timerQr;
+
+  @override
+  void initState() {
+    super.initState();
+    _agendarQr();
+  }
+
+  /// Chame quando [chaveQr] mudar (carteirinha recarregada).
+  void _agendarQr() {
+    _timerQr?.cancel();
+    final qr = chaveQr;
+    if (qr == null) return;
+    _timerQr = Timer(qr.ateProximoCodigo(DateTime.now()), () {
+      if (!mounted) return;
+      setState(() {});
+      _agendarQr();
+    });
+  }
+
+  @override
+  void dispose() {
+    _timerQr?.cancel();
+    super.dispose();
+  }
+}
+
 class _AbaCarteirinha extends StatefulWidget {
   const _AbaCarteirinha({super.key, required this.organizacao});
 
@@ -251,8 +300,11 @@ class _AbaCarteirinha extends StatefulWidget {
   State<_AbaCarteirinha> createState() => _AbaCarteirinhaState();
 }
 
-class _AbaCarteirinhaState extends State<_AbaCarteirinha> {
+class _AbaCarteirinhaState extends State<_AbaCarteirinha> with _AtualizaQr {
   CarteirinhaMembro? _carteirinha;
+
+  @override
+  ChaveQr? get chaveQr => _carteirinha?.qr;
   String? _erro;
   bool _salvandoFoto = false;
 
@@ -262,13 +314,16 @@ class _AbaCarteirinhaState extends State<_AbaCarteirinha> {
     _carregar();
   }
 
-  /// Busca a carteirinha. O QR Code é fixo: só muda quando a administração
-  /// bloqueia, desativa ou libera um novo ciclo.
+  /// Busca a carteirinha e a chave do QR. O código muda sozinho a cada 30 s,
+  /// sem buscar de novo; a chave só muda quando a administração bloqueia,
+  /// desativa ou libera um novo ciclo.
   Future<void> _carregar() async {
     setState(() => _erro = null);
     try {
       final c = await context.read<AreaMembroRepositorio>().carteirinha();
-      if (mounted) setState(() => _carteirinha = c);
+      if (!mounted) return;
+      setState(() => _carteirinha = c);
+      _agendarQr();
     } catch (e) {
       if (!mounted) return;
       final mensagem = mensagemDeErro(e);
@@ -280,8 +335,8 @@ class _AbaCarteirinhaState extends State<_AbaCarteirinha> {
 
   /// QR Code em tela cheia, preto no branco, para o leitor do operador.
   void _ampliarQr(CarteirinhaMembro c) {
-    final codigo = c.qrCodigo;
-    if (codigo == null) return;
+    final qr = c.qr;
+    if (qr == null) return;
     showGeneralDialog<void>(
       context: context,
       barrierDismissible: true,
@@ -295,7 +350,7 @@ class _AbaCarteirinhaState extends State<_AbaCarteirinha> {
           child: filho,
         ),
       ),
-      pageBuilder: (context, _, _) => _QrAmpliado(codigo: codigo, nome: c.nomeMembro, numero: c.numero),
+      pageBuilder: (context, _, _) => _QrAmpliado(qr: qr, nome: c.nomeMembro, numero: c.numero),
     );
   }
 
@@ -402,7 +457,7 @@ class _AbaCarteirinhaState extends State<_AbaCarteirinha> {
           validade: 'Válida até ${Datas.formatar(c.dataVencimento)}',
           numero: c.numero,
           foto: c.foto,
-          qrCodigo: avisoQr == null ? c.qrCodigo : null,
+          qrCodigo: avisoQr == null ? c.qr?.codigo(DateTime.now()) : null,
           avisoQr: avisoQr,
         ),
       ),
@@ -428,6 +483,24 @@ class _AbaCarteirinhaState extends State<_AbaCarteirinha> {
               Center(
                 child: SizedBox(width: largura, child: cartao),
               ),
+              if (c.qr != null && !situacao.semQr)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.autorenew, size: 16, color: Cores.textoSecundario),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          'O QR Code muda a cada ${c.qr!.passoSegundos} s. Mostre a tela, não uma foto.',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               if (c.foto == null && !situacao.semQr)
                 Padding(
                   padding: const EdgeInsets.only(top: 10),

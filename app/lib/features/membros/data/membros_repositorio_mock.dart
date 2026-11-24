@@ -44,7 +44,7 @@ class MembrosRepositorioMock implements MembrosRepositorio {
       telefone: dados.telefone,
     );
     _membros.add(membro);
-    return MembroCriado(membro, senhaProvisoria);
+    return MembroCriado(membro, senhaProvisoria, emailEnviado: true);
   }
 
   @override

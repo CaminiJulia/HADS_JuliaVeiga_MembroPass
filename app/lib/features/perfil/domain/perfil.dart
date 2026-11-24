@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import '../../auth/domain/papel.dart';
+
 /// Dados da conta de quem está logado, mostrados na aba "Meu perfil".
 class Perfil {
   const Perfil({
@@ -8,6 +10,7 @@ class Perfil {
     required this.nome,
     required this.email,
     required this.organizacaoNome,
+    this.papel = Papel.administrador,
     this.telefone,
     this.cargo,
     this.foto,
@@ -21,6 +24,7 @@ class Perfil {
       nome: json['nome'] as String,
       email: json['email'] as String,
       organizacaoNome: json['organizacaoNome'] as String,
+      papel: json['papel'] == 'operador' ? Papel.operador : Papel.administrador,
       telefone: json['telefone'] as String?,
       cargo: json['cargo'] as String?,
       foto: foto == null ? null : base64Decode(foto),
@@ -34,12 +38,21 @@ class Perfil {
   /// E-mail de login: aparece no perfil, mas não é editado por ele.
   final String email;
   final String organizacaoNome;
+
+  /// Administrador ou operador: cada um tem o próprio cadastro.
+  final Papel papel;
   final String? telefone;
   final String? cargo;
   final Uint8List? foto;
 
   /// "image/png" ou "image/jpeg".
   final String? fotoTipo;
+
+  /// Só o administrador informa cargo; o operador já tem a função no papel.
+  bool get temCargo => papel == Papel.administrador;
+
+  /// "Administrador" ou "Operador", para o selo do perfil.
+  String get rotuloPapel => papel == Papel.operador ? 'Operador' : 'Administrador';
 
   /// Até duas iniciais do nome, para o avatar sem foto.
   String get iniciais {

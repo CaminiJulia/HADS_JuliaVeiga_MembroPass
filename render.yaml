@@ -1,0 +1,27 @@
+# Render (https://render.com): publica a API a partir deste repositório.
+# No painel: New > Blueprint > escolha o repositório. Os valores com
+# "sync: false" são pedidos na criação (e ficam fora do Git).
+services:
+  - type: web
+    name: membropass-api
+    runtime: node
+    plan: free
+    region: virginia
+    rootDir: api
+    # --include=dev: com NODE_ENV=production o npm pularia o Nest CLI e o TypeScript.
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run start:prod
+    healthCheckPath: /saude
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRACAO_SEGUNDOS
+        value: "28800"
+      - key: DATABASE_URL
+        sync: false
+      - key: EMAIL_APPS_SCRIPT_URL
+        sync: false
+      - key: EMAIL_APPS_SCRIPT_SEGREDO
+        sync: false
