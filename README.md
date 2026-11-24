@@ -154,7 +154,10 @@ e-mails saem por um Google Apps Script na conta do Gmail.
 1. **Banco:** crie um projeto no Neon e copie a *connection string*. Dentro de `api/`, rode
    `node scripts/preparar-producao.mjs "<connection string>" --organizacao "Nome" --cnpj 00000000000000 --admin "Seu Nome" --email voce@exemplo.com`.
    O script cria as tabelas (sem dados de teste) e mostra a senha provisória do primeiro administrador.
-2. **E-mail:** publique `api/scripts/envio-email.gs` como app da Web (passo a passo no próprio arquivo).
+2. **E-mail:** logado no Gmail que vai enviar, crie um projeto em <https://script.google.com>, cole
+   `api/scripts/envio-email.gs` e preencha `SEGREDO` (o mesmo de `EMAIL_APPS_SCRIPT_SEGREDO`). Rode a função
+   `testar` para autorizar o Gmail; depois *Implantar > Nova implantação > App da Web* (executar como "Eu",
+   acesso "Qualquer pessoa") e copie a URL terminada em `/exec`.
 3. **API:** no Render, *New > Blueprint* com este repositório (usa o `render.yaml`). Preencha `DATABASE_URL`,
    `EMAIL_APPS_SCRIPT_URL` e `EMAIL_APPS_SCRIPT_SEGREDO`. O `JWT_SECRET` é gerado pelo Render.
 4. **App:** gere o instalador apontando para a API online:
