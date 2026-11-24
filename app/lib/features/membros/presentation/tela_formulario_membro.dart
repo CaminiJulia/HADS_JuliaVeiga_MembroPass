@@ -7,6 +7,7 @@ import '../../../core/widgets/componentes.dart';
 import '../../auth/presentation/widgets/aviso_erro.dart';
 import '../../planos/domain/plano.dart';
 import '../../planos/domain/planos_repositorio.dart';
+import '../../planos/presentation/escolha_plano.dart';
 import '../domain/membro.dart';
 import '../domain/membros_repositorio.dart';
 
@@ -162,7 +163,7 @@ class _TelaFormularioMembroState extends State<TelaFormularioMembro> {
                         return RegExp(r'^[\d\s()+-]{8,20}$').hasMatch(t) ? null : 'Informe um telefone válido.';
                       },
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
                     if (planos == null)
                       const LinearProgressIndicator()
                     else if (planos.isEmpty)
@@ -171,19 +172,12 @@ class _TelaFormularioMembroState extends State<TelaFormularioMembro> {
                         style: texto.bodyMedium?.copyWith(color: Cores.erro),
                       )
                     else
-                      DropdownButtonFormField<String>(
+                      EscolhaPlano(
                         key: const Key('campo-plano-membro'),
-                        initialValue: _planoId,
-                        decoration: const InputDecoration(
-                          labelText: 'Plano',
-                          prefixIcon: Icon(Icons.workspace_premium_outlined),
-                        ),
-                        items: [
-                          for (final p in planos)
-                            DropdownMenuItem(value: p.id, child: Text(p.ativo ? p.nome : '${p.nome} (inativo)')),
-                        ],
-                        onChanged: _salvando ? null : (id) => setState(() => _planoId = id),
-                        validator: (id) => id == null ? 'Escolha um plano.' : null,
+                        planos: planos,
+                        selecionado: _planoId,
+                        habilitado: !_salvando,
+                        aoEscolher: (id) => setState(() => _planoId = id),
                       ),
                     if (trocouPlano) ...[
                       const SizedBox(height: 8),

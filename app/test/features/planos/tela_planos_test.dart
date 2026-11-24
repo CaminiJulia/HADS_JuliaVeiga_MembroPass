@@ -81,11 +81,12 @@ void main() {
     await tester.tap(find.byKey(const Key('botao-salvar-plano')));
     await tester.pumpAndSettle();
 
-    final cartao = find.ancestor(of: find.text('Família'), matching: find.byType(Row)).first;
-    final icone = tester.widget<Icon>(
-      find.descendant(of: cartao, matching: find.byIcon(Icons.workspace_premium_outlined)),
-    );
+    // O cartão usa a cor no degradê do topo e nos ícones das contagens.
+    final cartao = find.ancestor(of: find.text('Família'), matching: find.byType(InkWell)).first;
+    final icone = tester.widget<Icon>(find.descendant(of: cartao, matching: find.byIcon(Icons.people_alt_outlined)));
     expect(icone.color, const Color(0xFF2BB5A0));
+    final degrade = tester.widget<DecoratedBox>(find.descendant(of: cartao, matching: find.byType(DecoratedBox)).first);
+    expect((degrade.decoration as BoxDecoration).gradient!.colors, degradeDoPlano('#2BB5A0'));
   });
 
   testWidgets('bolinha de arco-íris abre a roda de cores', (tester) async {

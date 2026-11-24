@@ -62,8 +62,7 @@ void main() {
 
     await tester.enterText(find.byKey(const Key('campo-nome-membro')), 'Eva Nunes');
     await tester.enterText(find.byKey(const Key('campo-email-membro')), 'Eva@Exemplo.com');
-    await tester.tap(find.byKey(const Key('campo-plano-membro')));
-    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Anual').last);
     await tester.tap(find.text('Anual').last);
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('botao-salvar-membro')));
@@ -83,8 +82,7 @@ void main() {
 
     await tester.enterText(find.byKey(const Key('campo-nome-membro')), 'Outra');
     await tester.enterText(find.byKey(const Key('campo-email-membro')), 'bruno@exemplo.com');
-    await tester.tap(find.byKey(const Key('campo-plano-membro')));
-    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Mensal').last);
     await tester.tap(find.text('Mensal').last);
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('botao-salvar-membro')));
